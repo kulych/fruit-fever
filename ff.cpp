@@ -2,50 +2,213 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <fstream>
 #include <list>
 #include <memory>
 #include <cstdlib>
 #include <time.h>
 #include <cmath>
 
+#define DEBUG
+
 using namespace std;
+
+struct Circle {
+public:
+	double x, y, r;
+
+	Circle(double x, double y, double r) : x(x), y(y), r(r) {}
+
+	bool intersects(const Circle& other) const {
+		double dx = x-other.x;
+		double dy = y-other.y;
+		if (sqrt(dx*dx + dy*dy) < r + other.r)
+			return true;
+		return false;
+	}
+	
+	bool intersects(const Circle& other, sf::Vector2f shift) const {
+		double dx = x-other.x + shift.x;
+		double dy = y-other.y + shift.y;
+		if (sqrt(dx*dx + dy*dy) < r + other.r)
+			return true;
+		return false;
+	}
+
+	void rotate(double cx, double cy, double angle) {
+		angle = angle/180.0*3.1415926535;
+		double s = sin(angle);
+		double c = cos(angle);
+		x -= cx;
+		y -= cy;
+		double nx = x*c - y*s;
+		double ny = x*s + y*c;
+		x = nx + cx;
+		y = ny + cy;
+	}
+	
+/*	Circle operator+(sf::Vector2f shift) {
+		return Circle(x+shift.x, y+shift.y, r);
+	}*/
+};
+
+struct HBTexture {
+public:
+	sf::Texture texture;
+	vector<Circle> hitbox;
+	HBTexture() {}
+	HBTexture(const string& path) {
+		loadFromFile(path);
+	}
+	HBTexture(const sf::Texture& texture, const vector<Circle>& hitbox) : texture(texture), hitbox(hitbox) {}
+	HBTexture(const sf::Texture& texture, vector<Circle>&& hitbox) : texture(texture), hitbox(move(hitbox)) {}
+	void loadFromFile(const string& path) {
+		texture.loadFromFile(path);
+		cout << "loaded" << endl;
+		ifstream fil;
+		fil.open(path + ".hb");
+		cout << path << endl;
+		double x, y, r;
+		fil >> x >> y;
+		while(!fil.eof()) {
+			fil >> x >> y >> r;
+			hitbox.push_back(Circle(x,y,r));
+			cout << "add circ " << x << " " << y << " " << r << endl;
+		}
+	}
+	void setSmooth(bool set){
+		texture.setSmooth(set);
+	}
+};
+
+struct Figure {
+private:
+	sf::Vector2f position;
+	sf::Vector2f origin;
+	vector<Circle> hitbox;
+public:
+	sf::Sprite sprite;
+	Figure(const HBTexture& texture) : sprite(texture.texture), hitbox(texture.hitbox) {}
+	void setOrigin(double x, double y) {
+		origin = sf::Vector2f(x,y);
+		sprite.setOrigin(x,y);
+		for (Circle& c : hitbox) {
+			c.x -= x;
+			c.y -= y;
+		}
+	}
+
+	void scale(double ratio) {
+		sprite.scale(ratio, ratio);
+		origin = (float)ratio*origin;
+		for (Circle& c : hitbox) {
+			c.x *= ratio;
+			c.y *= ratio;
+			c.r *= ratio;
+		}
+	}
+
+	void rotate(double angle) {
+		for (Circle& c : hitbox) {
+			c.rotate(0,0, angle);
+		}
+		sprite.rotate(angle);
+	}
+
+	void setPosition(sf::Vector2f pos) {
+		position = pos;
+		sprite.setPosition(pos);
+	}
+	
+	void setPosition(double px, double py) {
+		setPosition(sf::Vector2f(px, py));
+	}
+
+	sf::FloatRect getGlobalBounds() const {
+		return sprite.getGlobalBounds();
+	}
+
+	sf::Vector2f getPosition() {
+		return position;
+	}
+	void move(double x, double y) {
+		position += sf::Vector2f(x,y);
+		sprite.move(x,y);
+	}
+	
+	void move(sf::Vector2f d) {
+		position += d;
+		sprite.move(d);
+	}
+
+	bool collides(const Figure& other) const {
+		if (sprite.getGlobalBounds().intersects(other.sprite.getGlobalBounds())) {
+			for (const auto& circA : hitbox) {
+				for (const auto& circB : other.hitbox) {
+					if(circA.intersects(circB,position - other.position))
+						return true;
+				}
+			}
+		}
+		return false;
+	}
+	void render(sf::RenderWindow& window) {
+		window.draw(sprite);
+#ifdef DEBUG
+		for(const Circle& c : hitbox) {
+			sf::CircleShape myc(c.r);
+			myc.setPosition(position.x + c.x-c.r, position.y + c.y - c.r);
+			myc.setFillColor(sf::Color::Transparent);
+			myc.setOutlineThickness(-3);
+			myc.setOutlineColor(sf::Color::Red);
+			window.draw(myc);
+		}
+#endif
+	}
+};
+
+class Body {
+private:
+public:
+	Figure sprite;
+	Body(const HBTexture& texture) : sprite(texture) { }
+	virtual void render(sf::RenderWindow& window) {
+			sprite.render(window);
+	}
+	virtual bool collides(const Body& other) {
+		return sprite.collides(other.sprite);
+	}
+//	virtual void tick() = 0;
+};
 
 class Space;
 
-class Bomb {
+class Bomb : public Body {
 	sf::Vector2f speed;
 public:
-	sf::Sprite sprite;
-	static sf::Texture textures[4];
+	static HBTexture textures[4];
 	bool alive;
-	Bomb(sf::Vector2f, sf::Vector2f);
-	void render(sf::RenderWindow&);	
-	void tick();
-
+	Bomb(sf::Vector2f, sf::Vector2f);	
+	virtual void tick();
 };
 
-class Shot {
+class Shot : public Body {
 	sf::Vector2f speed;
 public:
-	sf::Sprite sprite;
-	static sf::Texture texture;
+	static HBTexture texture;
 	Shot(sf::Vector2f, sf::Vector2f);
-	void render(sf::RenderWindow&);	
-	void tick();
+	virtual void tick();
 
 };
 
 
-class Player {
+class Player : public Body{
 	sf::Vector2f speed;
-	sf::Sprite sprite;
 public:
-	static sf::Texture texture;
+	static HBTexture texture;
 	Player(sf::Vector2f, sf::Vector2f);
 	void move(float);
 	void shoot(Space&);
-	void render(sf::RenderWindow&);
-	void tick();
 };
 
 class Space {
@@ -63,9 +226,9 @@ public:
 	void render(sf::RenderWindow&) const;
 };
 
-Player::Player(sf::Vector2f position, sf::Vector2f speed) : speed(speed), sprite(texture) {
+Player::Player(sf::Vector2f position, sf::Vector2f speed) : Body(texture), speed(speed) {
 	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height);
-	sprite.scale(0.2, 0.2);
+	sprite.scale(0.2);
 	sprite.setPosition(position.x, 800);
 }
 
@@ -78,17 +241,10 @@ void Player::move(float multip) {
 	sprite.move(multip*speed.x, 0);
 }
 
-void Player::render(sf::RenderWindow& window) {
-	window.draw(sprite);
-}
 
-Bomb::Bomb(sf::Vector2f position, sf::Vector2f speed) : speed(speed), sprite(textures[rand()%4]), alive(true) {
+Bomb::Bomb(sf::Vector2f position, sf::Vector2f speed) : Body(textures[rand()%4]), speed(speed), alive(true) {
 	sprite.setPosition(position);
-	sprite.scale(0.2,0.2);
-}
-
-void Bomb::render(sf::RenderWindow& window) {
-	window.draw(sprite);
+	sprite.scale(0.2);
 }
 
 void Bomb::tick() {
@@ -97,15 +253,12 @@ void Bomb::tick() {
 		alive = false;
 }
 
-Shot::Shot(sf::Vector2f position, sf::Vector2f speed) : speed(speed), sprite(texture){
+Shot::Shot(sf::Vector2f position, sf::Vector2f speed) : Body(texture), speed(speed){
 	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height/2.0);
 	sprite.setPosition(position);
-	sprite.setScale(0.2, 0.2);
+//	sprite.setScale(0.2, 0.2);
+	sprite.scale(0.1);
 	sprite.rotate(atan2(speed.y, speed.x)/3.1415926535*180);
-}
-
-void Shot::render(sf::RenderWindow& window) {
-	window.draw(sprite);
 }
 
 void Shot::tick() {
@@ -123,7 +276,7 @@ void Space::rescale(const sf::RenderWindow& window) {
 	}
 }
 
-void Space::render(sf::RenderWindow& window) const{
+void Space::render(sf::RenderWindow& window) const {
 	//window dimensions
 	for (int i = 0; i < ground_num; ++i) {
 		if (ground_alive[i])
@@ -139,7 +292,7 @@ void Space::render(sf::RenderWindow& window) const{
 
 void Space::tick() {
 	if (rand() % 100 < 3) 
-		bombs.push_back(make_unique<Bomb>(sf::Vector2f(rand()%800, 0), sf::Vector2f(0, 5)));
+		bombs.push_back(make_unique<Bomb>(sf::Vector2f(rand()%800, 0), sf::Vector2f(0, 1)));
 	for (auto& bomb : bombs) 
 		bomb->tick();
 	for (auto& shot : shots) 
@@ -150,7 +303,8 @@ void Space::tick() {
 		auto shot = shots.begin();
 		bool destroyed = false;
 		while (shot != shots.end()) {
-			if ((*bomb)->sprite.getGlobalBounds().intersects((*shot)->sprite.getGlobalBounds())) {
+			if((*bomb)->collides(*(*shot))) {
+//			if ((*bomb)->sprite.getGlobalBounds().intersects((*shot)->sprite.getGlobalBounds())) {
 				bombs.erase(bomb++);
 				shots.erase(shot);
 				destroyed = true;
@@ -159,8 +313,16 @@ void Space::tick() {
 			else 
 				shot++;
 		}
-		if (!destroyed)
+		if (!destroyed) {
+			auto player = players.begin();
+			while (player != players.end()) {
+				if((*bomb)->collides(*(*player))) {
+					cout << "DEAD" << endl;
+				}
+				player++;
+			}
 			bomb++;
+		}
 	}
 				
 
@@ -183,9 +345,9 @@ Space::Space() : ground_num(50) {
 }
 
 sf::Texture Space::ground_texture;
-sf::Texture Bomb::textures[4];
-sf::Texture Player::texture;
-sf::Texture Shot::texture;
+HBTexture Bomb::textures[4];
+HBTexture Player::texture;
+HBTexture Shot::texture;
 
 int main(void) {
 	srand(time(NULL));
@@ -193,6 +355,7 @@ int main(void) {
 
 	Space::ground_texture.loadFromFile("svg/block.png");
 	Space::ground_texture.setSmooth(true);
+
 
 	Bomb::textures[0].loadFromFile("svg/apple.png");
 	Bomb::textures[0].setSmooth(true);
@@ -202,18 +365,32 @@ int main(void) {
 	Bomb::textures[2].setSmooth(true);
 	Bomb::textures[3].loadFromFile("svg/lemon.png");
 	Bomb::textures[3].setSmooth(true);
+	
 
 	Player::texture.loadFromFile("svg/bunny.png");
 	Player::texture.setSmooth(true);
 
 	Shot::texture.loadFromFile("svg/carrot.png");
 	Shot::texture.setSmooth(true);
+	
 
 	Space sp;
 	sf::RenderWindow window(sf::VideoMode(800, 800), "Gravity!", sf::Style::Close);
 	window.setVerticalSyncEnabled(true);
 	sf::View view(sf::FloatRect(0,16,800,800));
 
+
+	// TEST
+	HBTexture tt("svg/carrot.png");
+
+	Figure myfig(tt);
+	myfig.setOrigin(myfig.sprite.getGlobalBounds().width/2.0, myfig.sprite.getGlobalBounds().height/2.0);
+	myfig.setPosition(sf::Vector2f(100,100));
+	myfig.rotate(90);
+	// TEST
+
+
+		
 	window.setView(view);
 	sp.rescale(window);
 
@@ -242,12 +419,14 @@ int main(void) {
                         view.setCenter(ship->pos.x, ship->pos.y);
                         window.setView(view);
                 } */      
-
-
-
+		//myfig.move(3,0);
+		//myfig.scale(0.999);
+		//myfig.rotate(1);
 		window.clear();
+		//myfig.render(window);		
 		sp.render(window);
 		window.display();
+		
 		sp.tick();
 	}
 	return 0;
