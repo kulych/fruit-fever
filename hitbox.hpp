@@ -1,30 +1,42 @@
 #ifndef __HITBOX_HPP
 #define __HITBOX_HPP
 
-class Circle;
-class Line;
+#include <SFML/Graphics.hpp>
+#include <memory>
+#include <vector>
+#include <string>
+#include "primitives.hpp"
 
-class Primitive {
+struct HBTexture {
 public:
-	virtual bool _intersects(const Circle&, double, double) const = 0;
-	//virtual bool _intersects(const Line&, double, double) const = 0;
-	virtual bool intersects(const Primitive&, double, double) const = 0;
-	virtual void rotate(double, double, double) = 0;
+	sf::Texture texture;
+	std::vector<std::unique_ptr<Primitive>> hitbox;
+	HBTexture() {}
+	HBTexture(const std::string& path) { loadFromFile(path); }
+	HBTexture(const sf::Texture& texture, std::vector<std::unique_ptr<Primitive>>&& hitbox) : texture(texture), hitbox(move(hitbox)) {}
+	HBTexture(const sf::Texture&, const std::vector<std::unique_ptr<Primitive>>&);
+	void loadFromFile(const std::string&);
+	void setSmooth(bool set) { texture.setSmooth(set); }
 };
 
-class Circle : public Primitive {
+struct Figure {
+	sf::Vector2f position;
+	sf::Vector2f origin;
+	std::vector<std::unique_ptr<Primitive>> hitbox;
 public:
-	double x, y, r;
-	Circle(double, double, double);
-	bool _intersects(const Circle&, double, double) const override;
-	//bool _intersects(const Line&, double, double) const override;
-	bool intersects(const Primitive&, double, double) const override;
-	void rotate(double, double, double) override;
-};
-
-class Line : public Primitive {
-	double ax, ay, bx, by;
-	Line(double, double, double, double);
+	sf::Sprite sprite;
+	Figure(const HBTexture&);
+	void setOrigin(double, double);
+	void scale(double);
+	void rotate(double);
+	void setPosition(sf::Vector2f pos) { position = pos; sprite.setPosition(pos); }
+	void setPosition(double px, double py) { setPosition(sf::Vector2f(px,py)); }
+	sf::FloatRect getGlobalBounds() const { return sprite.getGlobalBounds(); }
+	sf::Vector2f getPosition() const { return position; }
+	void move(double x, double y) { position += sf::Vector2f(x,y); sprite.move(x,y); }
+	void move(sf::Vector2f d) {position += d; sprite.move(d); }
+	bool collides(const Figure&) const;
+	void render(sf::RenderWindow&) const;
 };
 
 #endif

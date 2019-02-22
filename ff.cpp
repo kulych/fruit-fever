@@ -10,114 +10,11 @@
 #include <cmath>
 #include "hitbox.hpp"
 
-#define DEBUG
+//#define DEBUG
 
 using namespace std;
 
-struct HBTexture {
-public:
-	sf::Texture texture;
-	vector<Circle> hitbox;
-	HBTexture() {}
-	HBTexture(const string& path) {
-		loadFromFile(path);
-	}
-	HBTexture(const sf::Texture& texture, const vector<Circle>& hitbox) : texture(texture), hitbox(hitbox) {}
-	HBTexture(const sf::Texture& texture, vector<Circle>&& hitbox) : texture(texture), hitbox(move(hitbox)) {}
-	void loadFromFile(const string& path) {
-		texture.loadFromFile(path);
-		cout << "loaded" << endl;
-		ifstream fil;
-		fil.open(path + ".hb");
-		cout << path << endl;
-		double x, y, r;
-		fil >> x >> y;
-		while(!fil.eof()) {
-			fil >> x >> y >> r;
-			hitbox.push_back(Circle(x,y,r));
-			cout << "add circ " << x << " " << y << " " << r << endl;
-		}
-	}
-	void setSmooth(bool set){
-		texture.setSmooth(set);
-	}
-};
-
-struct Figure {
-private:
-	sf::Vector2f position;
-	sf::Vector2f origin;
-	vector<Circle> hitbox;
-public:
-	sf::Sprite sprite;
-	Figure(const HBTexture& texture) : sprite(texture.texture), hitbox(texture.hitbox) {}
-	void setOrigin(double x, double y) {
-		origin = sf::Vector2f(x,y);
-		sprite.setOrigin(x,y);
-		for (Circle& c : hitbox) {
-			c.x -= x;
-			c.y -= y;
-		}
-	}
-
-	void scale(double ratio) {
-		sprite.scale(ratio, ratio);
-		origin = (float)ratio*origin;
-		for (Circle& c : hitbox) {
-			c.x *= ratio;
-			c.y *= ratio;
-			c.r *= ratio;
-		}
-	}
-
-	void rotate(double angle) {
-		for (Circle& c : hitbox) {
-			c.rotate(0,0, angle);
-		}
-		sprite.rotate(angle);
-	}
-
-	void setPosition(sf::Vector2f pos) {
-		position = pos;
-		sprite.setPosition(pos);
-	}
-	
-	void setPosition(double px, double py) {
-		setPosition(sf::Vector2f(px, py));
-	}
-
-	sf::FloatRect getGlobalBounds() const {
-		return sprite.getGlobalBounds();
-	}
-
-	sf::Vector2f getPosition() {
-		return position;
-	}
-	void move(double x, double y) {
-		position += sf::Vector2f(x,y);
-		sprite.move(x,y);
-	}
-	
-	void move(sf::Vector2f d) {
-		position += d;
-		sprite.move(d);
-	}
-
-	bool collides(const Figure& other) const {
-		if (sprite.getGlobalBounds().intersects(other.sprite.getGlobalBounds())) {
-			for (const auto& circA : hitbox) {
-				for (const auto& circB : other.hitbox) {
-					sf::Vector2f sh = position - other.position;
-					if(circA.intersects(circB,sh.x, sh.y))
-						return true;
-				}
-			}
-		}
-		return false;
-	}
-	void render(sf::RenderWindow& window) {
-		window.draw(sprite);
-#ifdef DEBUG
+/*#ifdef DEBUG
 		for(const Circle& c : hitbox) {
 			sf::CircleShape myc(c.r);
 			myc.setPosition(position.x + c.x-c.r, position.y + c.y - c.r);
@@ -129,6 +26,9 @@ public:
 #endif
 	}
 };
+*/
+
+
 
 class Body {
 private:
@@ -287,7 +187,8 @@ void Space::tick() {
 			bomb++;
 		}
 	}
-				
+	//cout << "nepocitam" << endl;
+
 
 	auto it = bombs.begin();
 	while (it != bombs.end()) {
@@ -345,11 +246,15 @@ int main(void) {
 
 	// TEST
 	HBTexture tt("svg/carrot.png");
-
+	vector<unique_ptr<Primitive>> myhb;
+	myhb.push_back(make_unique<Line>(0,0,512,100));
+	tt.hitbox = move(myhb);
 	Figure myfig(tt);
 	myfig.setOrigin(myfig.sprite.getGlobalBounds().width/2.0, myfig.sprite.getGlobalBounds().height/2.0);
-	myfig.setPosition(sf::Vector2f(100,100));
-	myfig.rotate(90);
+	myfig.setPosition(sf::Vector2f(400,400));
+//	myfig.rotate(90);
+
+	cout << "test" << endl;
 	// TEST
 
 
@@ -374,6 +279,18 @@ int main(void) {
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space)){
                         sp.players[0]->shoot(sp);
                 }
+		if(sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
+			myfig.move(10,0);
+                }       
+                if(sf::Keyboard::isKeyPressed(sf::Keyboard::R)){
+			myfig.move(0,10);
+                }       
+                if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){
+			myfig.move(-10,0);
+                }
+                if(sf::Keyboard::isKeyPressed(sf::Keyboard::W)){
+			myfig.move(0,-10);
+                }
 		/*
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Down)){
                         ship->boost(-1000, 0.01);
@@ -382,15 +299,15 @@ int main(void) {
                         view.setCenter(ship->pos.x, ship->pos.y);
                         window.setView(view);
                 } */      
-		//myfig.move(3,0);
+		//myfig.move(1,1);
 		//myfig.scale(0.999);
-		//myfig.rotate(1);
+		myfig.rotate(1);
 		window.clear();
-		//myfig.render(window);		
+		myfig.render(window);		
 		sp.render(window);
 		window.display();
-		
 		sp.tick();
+		cout << myfig.collides((*(sp.players[0])).sprite) << endl;
 	}
 	return 0;
 }
