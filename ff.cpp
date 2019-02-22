@@ -8,49 +8,11 @@
 #include <cstdlib>
 #include <time.h>
 #include <cmath>
+#include "hitbox.hpp"
 
 #define DEBUG
 
 using namespace std;
-
-struct Circle {
-public:
-	double x, y, r;
-
-	Circle(double x, double y, double r) : x(x), y(y), r(r) {}
-
-	bool intersects(const Circle& other) const {
-		double dx = x-other.x;
-		double dy = y-other.y;
-		if (sqrt(dx*dx + dy*dy) < r + other.r)
-			return true;
-		return false;
-	}
-	
-	bool intersects(const Circle& other, sf::Vector2f shift) const {
-		double dx = x-other.x + shift.x;
-		double dy = y-other.y + shift.y;
-		if (sqrt(dx*dx + dy*dy) < r + other.r)
-			return true;
-		return false;
-	}
-
-	void rotate(double cx, double cy, double angle) {
-		angle = angle/180.0*3.1415926535;
-		double s = sin(angle);
-		double c = cos(angle);
-		x -= cx;
-		y -= cy;
-		double nx = x*c - y*s;
-		double ny = x*s + y*c;
-		x = nx + cx;
-		y = ny + cy;
-	}
-	
-/*	Circle operator+(sf::Vector2f shift) {
-		return Circle(x+shift.x, y+shift.y, r);
-	}*/
-};
 
 struct HBTexture {
 public:
@@ -145,7 +107,8 @@ public:
 		if (sprite.getGlobalBounds().intersects(other.sprite.getGlobalBounds())) {
 			for (const auto& circA : hitbox) {
 				for (const auto& circB : other.hitbox) {
-					if(circA.intersects(circB,position - other.position))
+					sf::Vector2f sh = position - other.position;
+					if(circA.intersects(circB,sh.x, sh.y))
 						return true;
 				}
 			}
