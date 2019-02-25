@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="60.545303mm"
+   height="61.957405mm"
+   viewBox="0 0 60.545303 61.957405"
+   version="1.1"
+   id="svg8"
+   sodipodi:docname="orange.svg"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   inkscape:export-filename="/home/kulych/prog/mff/1819/cpp/fruit-fever/svg/orange.png"
+   inkscape:export-xdpi="50.799999"
+   inkscape:export-ydpi="50.799999">
+  <defs
+     id="defs2" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="3.2389725"
+     inkscape:cx="173.64876"
+     inkscape:cy="120.80418"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1918"
+     inkscape:window-height="1078"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     fit-margin-top="0"
+     fit-margin-left="0"
+     fit-margin-right="0"
+     fit-margin-bottom="0" />
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-34.535934,-203.43712)">
+    <path
+       style="fill:#ffae00;fill-opacity:1;stroke:#000000;stroke-width:0.265;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       d="m 65.21722,203.57645 c 17.328409,0.36651 28.218399,8.91464 29.61725,29.15318 1.398851,20.23854 -10.138034,32.69457 -27.961936,32.53102 -15.508363,-0.14231 -31.362671,-10.88136 -32.171,-29.47347 -0.808328,-18.5921 13.187277,-32.57724 30.515686,-32.21073 z"
+       id="path822"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="zcssz" />
+    <path
+       style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 65.21722,203.57645 c 17.328408,0.36651 28.218398,8.91464 29.617248,29.15318 1.39885,20.23854 -10.13803,32.69457 -27.961932,32.53102 -15.508363,-0.1423 -31.362672,-10.88136 -32.171001,-29.47346 -0.808328,-18.59211 13.187278,-32.57725 30.515685,-32.21074 z"
+       id="path822-3"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="zcssz" />
+  </g>
+</svg>

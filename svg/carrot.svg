@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="99.278mm"
+   height="27.177999mm"
+   viewBox="0 0 99.278 27.177999"
+   version="1.1"
+   id="svg8987"
+   inkscape:version="0.92.4 5da689c313, 2019-01-14"
+   sodipodi:docname="carrot.svg"
+   inkscape:export-filename="/home/kulych/prog/mff/1819/cpp/fruit-fever/svg/carrot.png"
+   inkscape:export-xdpi="50.799999"
+   inkscape:export-ydpi="50.799999">
+  <defs
+     id="defs8981" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="2"
+     inkscape:cx="311.51088"
+     inkscape:cy="92.071978"
+     inkscape:document-units="mm"
+     inkscape:current-layer="layer1"
+     showgrid="false"
+     inkscape:window-width="1918"
+     inkscape:window-height="1078"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0" />
+  <metadata
+     id="metadata8984">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(0,-269.822)">
+    <path
+       style="fill:#00cd00;fill-opacity:1;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 23.967151,276.26708 -13.63074,-6.1472 2.13815,3.4745 7.74525,4.98085 -13.2629398,-0.80181 c 0,0 -5.38338,4.60517 -6.77671002,13.19348 4.27632002,-2.93996 20.84702982,-6.1472 20.84702982,-6.1472 l -14.1652898,7.75082 c 0,0 -3.20723,5.61266 0.80181,4.00904 4.0090398,-1.60362 19.7779398,-10.42351 19.7779398,-10.42351 z"
+       id="path9534"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccccccccscc" />
+    <path
+       style="fill:#ffab03;fill-opacity:1;stroke:#000000;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 20.936761,271.33867 c 0,0 52.34213,1.73028 78,12 -25.65787,11.3388 -78,12 -78,12 0,0 -2.91876,-7.61443 -2.93996,-11.73273 -0.02121,-4.1183 2.93996,-12.26727 2.93996,-12.26727 z"
+       id="path9532"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="ccczc" />
+  </g>
+</svg>

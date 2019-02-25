@@ -27,7 +27,9 @@ public:
 	sf::Sprite sprite;
 	Figure(const HBTexture&);
 	void setOrigin(double, double);
+	sf::Vector2f getOrigin() { return origin; }
 	void scale(double);
+	void setScale(double);
 	void rotate(double);
 	void setPosition(sf::Vector2f pos) { position = pos; sprite.setPosition(pos); }
 	void setPosition(double px, double py) { setPosition(sf::Vector2f(px,py)); }

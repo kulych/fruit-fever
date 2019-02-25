@@ -47,8 +47,8 @@ bool Circle::intersects(const Primitive& other, double sx, double sy) const {
 }
 
 bool Circle::_intersects(const Circle& other, double sx, double sy) const {
-	double dx = x-other.x + sx;
-	double dy = y-other.y + sy;
+	double dx = x - (other.x + sx);
+	double dy = y - (other.y + sy);
 	if (sqrt(dx*dx + dy*dy) < r + other.r)
 		return true;
 	return false;
@@ -88,18 +88,49 @@ bool Line::intersects(const Primitive& other, double sx, double sy) const {
 }
 
 bool Line::_intersects(const Line& other, double sx, double sy) const {
+	std::cout << "__MISSING CODE :-)__" << std::endl;
 	return true;
 }
 
-//Currently calculates line (not line SEGMENT as intended) - point distance
+double Line::a() const {
+	return by-ay;
+}
+double Line::b() const {
+	return -(bx-ax);
+}
+double Line::c() const {
+	return bx*ay - ax*by;
+}
+
 bool Line::_intersects(const Circle& other, double sx, double sy) const {
-	double dy = by-ay;
-	double dx = bx-ax;
-	//distance is either perpendicular distance or distance to the close endpoint
-	double distance = abs((by - ay)*(other.x+sx) - (bx-ax)*(other.y+sy) + bx*ay - by*ax)/(sqrt(dx*dx+dy*dy));
+/*	std::cout << "line: " << ax  << " " << ay << " " << bx << " " << by << std::endl;
+	std::cout << "circ: " << other.x << " " << other.y<< " " << other.r << std::endl;
+	std::cout << "line circ " << sx << " " << sy << std::endl;
+//	std::cout << other.x << " " << other.y << std::endl;
+	std::cout << "_____" << std::endl;*/
+	double cx = other.x + sx;
+	double cy = other.y + sy;
+	//my line: ax + by + c = 0
+	//perp line through cx, cy: bx - ay + k = 0; k = a*cy - b*cx
+	//their intersection (= projection of sx, sy to my line) is 
+
+	double k = a() * cy - b() * cx;
+	double px = -(b()*k + a()*c())/(a()*a() + b()*b());
+	double py = (k*a()-c()*b())/(a()*a() + b()*b());
+
+	double distance = abs(a() * cx + b() * cy + c())/(sqrt(a()*a() + b()*b()));
+
+	if (px >= std::min(ax, bx) && px <= std::max(ax,bx) && py >= std::min(ay,by) && py <= std::max(ay,by))
+		return distance <= other.r;
+	else{
+		return std::min(_distance(cx, cy, ax, ay), _distance(cx, cy, bx, by)) <= other.r;
+	}
+//	double distance2 = sqrt((px-cx)*(px-cx) + (py-cy)*(py-cy));
+
+	//std::cout << "DIS: " << distance << std::endl;
+	//double distance = abs((by - ay)*(other.x+sx) - (bx-ax)*(other.y+sy) + bx*ay - by*ax)/(sqrt(dx*dx+dy*dy));
 	//double edistance = std::min(_distance(other.x + sx, other.y + sy, ax, ay), _distance(other.x + sx, other.y + sy, bx, by));
 	//distance = std::max(distance, edistance);
-	return distance <= other.r;
 }
 	
 std::unique_ptr<Primitive> Line::clone() const {
@@ -107,9 +138,17 @@ std::unique_ptr<Primitive> Line::clone() const {
 }
 
 void Line::render(sf::RenderWindow& window, double px, double py) const {
-	sf::Vertex line[2];
+	sf::Vector2f slope(a(), b());
+	slope = 2.0f*slope / (float)sqrt(a()*a()+b()*b());
+	sf::VertexArray line(sf::Quads, 4);
 	line[0].position = sf::Vector2f(ax+px,ay+py);
-	line[1].position = sf::Vector2f(bx+px,by+py);
-	window.draw(line, 2, sf::Lines);
+	line[1].position = sf::Vector2f(ax+px,ay+py) + slope;
+	line[2].position = sf::Vector2f(bx+px,by+py) + slope;
+	line[3].position = sf::Vector2f(bx+px,by+py);
+	line[0].color = sf::Color::Red;
+	line[1].color = sf::Color::Red;
+	line[2].color = sf::Color::Red;
+	line[3].color = sf::Color::Red;
+	window.draw(line);
 	//TODO :)
 }

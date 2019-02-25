@@ -3,7 +3,8 @@
 
 #include <memory>
 
-//SMAZAT INCLUDE PO DODEBUGOVANI
+//render function is used for debugging mode
+//it can be removed (with this include) to make a standalone library
 #include <SFML/Graphics.hpp>
 
 class Circle;
@@ -13,6 +14,7 @@ class Primitive {
 public:
 	virtual bool _intersects(const Circle&, double, double) const = 0;
 	virtual bool _intersects(const Line&, double, double) const = 0;
+	//does *this colide with Primitive if you shift (add to its position) primitive by (double, double)?
 	virtual bool intersects(const Primitive&, double, double) const = 0;
 	virtual void rotate(double, double, double) = 0;
 	virtual void shift(double, double) = 0;
@@ -47,6 +49,9 @@ public:
 	void shift(double dx, double dy) override { ax += dx; ay += dy; bx += dx; by += dy; }
 	std::unique_ptr<Primitive> clone() const override;
 	void render(sf::RenderWindow&, double, double) const override;
+	double a() const;
+	double b() const;
+	double c() const;
 };
 
 #endif
