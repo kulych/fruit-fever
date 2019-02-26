@@ -29,6 +29,7 @@ public:
 	Figure(const HBTexture&);
 	void setTexture(const HBTexture& texture);
 	void setOrigin(double, double);
+	void centerOrigin();
 	sf::Vector2f getOrigin() { return origin; }
 	void scale(double);
 	void setScale(double);

@@ -62,6 +62,10 @@ void Figure::setOrigin(double x, double y) {
 		prim->shift(dif.x, dif.y);
 }
 
+void Figure::centerOrigin() {
+	setOrigin(getGlobalBounds().width/2, getGlobalBounds().height/2);
+}
+
 void Figure::scale(double ratio) {
 	sprite.scale(ratio, ratio);
 	origin = (float)ratio*sprite.getOrigin();

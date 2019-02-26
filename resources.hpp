@@ -12,15 +12,18 @@ struct ResourceManager {
 	std::unordered_map<std::string, sf::Texture> textures;
 	std::unordered_map<std::string, sf::Sound> sounds;
 	std::unordered_map<std::string, sf::SoundBuffer> soundBuffers;
+	std::unordered_map<std::string, sf::Font> fonts;
 public:
 	ResourceManager();
 	const HBTexture& getHBTexture(const std::string&) const;
 	const sf::Texture& getTexture(const std::string&) const;
+	const sf::Font& getFont(const std::string&) const;
 	sf::Sound& getSound(const std::string&);
 	//loads and makes Smooth
 	void loadTexture(const std::string&, const std::string&);	
 	void loadHBTexture(const std::string&, const std::string&);	
 	void loadSound(const std::string&, const std::string&);	
+	void loadFont(const std::string&, const std::string&);
 };
 
 #endif

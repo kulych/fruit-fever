@@ -25,7 +25,11 @@ const sf::Texture& ResourceManager::getTexture(const std::string& name) const {
 	return textures.at(name);
 }
 
-	sf::Sound& ResourceManager::getSound(const std::string& name) {
+const sf::Font& ResourceManager::getFont(const std::string& name) const {
+	return fonts.at(name);
+}
+
+sf::Sound& ResourceManager::getSound(const std::string& name) {
 	return sounds.at(name);
 }
 
@@ -37,6 +41,10 @@ void ResourceManager::loadHBTexture(const std::string& key, const std::string& p
 void ResourceManager::loadTexture(const std::string& key, const std::string& path) {
 	textures[key].loadFromFile(path);
 	hbtextures[key].setSmooth(true);
+}
+
+void ResourceManager::loadFont(const std::string& key, const std::string& path) {
+	fonts[key].loadFromFile(path);
 }
 
 void ResourceManager::loadSound(const std::string& key, const std::string& path) {
