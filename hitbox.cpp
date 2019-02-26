@@ -37,7 +37,17 @@ void HBTexture::loadFromFile(const std::string& path) {
 	}
 }
 
+Figure::Figure() : position(sf::Vector2f(0,0)) {
+}
+
 Figure::Figure(const HBTexture& texture) : sprite(texture.texture), position(sf::Vector2f(0,0)) {
+	for (const std::unique_ptr<Primitive>& prim : texture.hitbox) { 
+		hitbox.push_back(std::move(prim->clone()));
+	}
+}
+
+void Figure::setTexture(const HBTexture& texture) {
+	sprite.setTexture(texture.texture);
 	for (const std::unique_ptr<Primitive>& prim : texture.hitbox) { 
 		hitbox.push_back(std::move(prim->clone()));
 	}

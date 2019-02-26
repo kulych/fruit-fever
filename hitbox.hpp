@@ -25,7 +25,9 @@ struct Figure {
 	std::vector<std::unique_ptr<Primitive>> hitbox;
 public:
 	sf::Sprite sprite;
+	Figure();
 	Figure(const HBTexture&);
+	void setTexture(const HBTexture& texture);
 	void setOrigin(double, double);
 	sf::Vector2f getOrigin() { return origin; }
 	void scale(double);
