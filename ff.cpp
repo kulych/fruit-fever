@@ -52,8 +52,11 @@ public:
 	void rescale(const sf::RenderWindow&);
 	void explosion(sf::Vector2f);
 	void gunToPlayer(unique_ptr<Gun>);
+	void defaultGun();
 	void movePlayer(double);
 	void render(sf::RenderWindow&) const;
+	int getWidth() const { return width; }
+	int getHeight() const { return height; }
 };
 
 
@@ -145,6 +148,19 @@ public:
 	void hit(Space &sp) override {cout << "BIG HIT BABY" << endl;}
 };
 
+class Laser : public Shot {
+	int lifetime;
+public:
+	static HBTexture texture;
+	Laser(sf::Vector2f, double, int);
+	void tick() override {
+		if (lifetime <= 0)
+			alive = false;
+		lifetime--;
+	}
+	void hit(Space &sp) override { cout << "LASER HIT" << endl; }
+};
+
 class Player : public Body{
 	sf::Vector2f speed;
 public:
@@ -181,20 +197,23 @@ public:
 
 class Gun {
 public:
+	int loaded;
+	int interval;
+	int ammo;
 	//Const player??
 	//remove player?
+	Gun(int loaded, int interval, int ammo) : loaded(loaded), interval(interval), ammo(ammo) {}
 	virtual void shoot(Space&, Player&) = 0;
 	virtual void tick() = 0;
 };
 
 class Pistol : public Gun {
-	int loaded;
 public:
-	int interval;
-	Pistol(int interval) : interval(interval), loaded(0) {}
+	Pistol(int interval) : Gun(0, interval, -1) {}
 	void shoot(Space& space, Player& player) override{
 		if(loaded == 0) {
 			loaded = interval;
+			//push_front?
 			space.shots.push_front(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f(-4, -8)));
 			space.shots.push_front(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f( 4, -8)));
 		}
@@ -206,9 +225,42 @@ public:
 	}
 };	
 
-//class Giant : public Gun {
-//	void shoot(Space& space, Player& player) {
-//		space.
+class GiantGun : public Gun {
+public:
+	GiantGun(int loaded, int interval, int ammo) : Gun(loaded, interval, ammo) {}
+	GiantGun(int interval, int ammo) : GiantGun(0, interval, ammo) {}
+	GiantGun() : GiantGun(0, 0, 3) {}
+	void shoot(Space& space, Player& player) override {
+		if (loaded == 0) {
+			space.shots.push_front(make_unique<RotatingGiant>(sf::Vector2f(rand()%space.getWidth(), rand()%space.getHeight())));
+			loaded = interval;
+			ammo -= 1;
+			if (ammo == 0)
+				space.defaultGun();
+		}
+		else
+			cout << "--NOTLOADED " << loaded << "/" << interval << endl;
+	}
+	void tick() override {
+		loaded = std::max(0, loaded-1);
+	}
+};
+
+class RailGun : public Gun {
+public:
+	RailGun(int loaded, int interval, int ammo) : Gun(loaded, interval, ammo) {}
+	void shoot(Space& space, Player& player) override {
+		if (loaded == 0) {
+			sf::Vector2f headPosition(player.sprite.getPosition().x, player.sprite.getPosition().y - player.sprite.getGlobalBounds().height*0.6);
+			space.shots.push_front(make_unique<Laser>(headPosition, 30, 3));
+			space.shots.push_front(make_unique<Laser>(headPosition,-30, 3));
+			loaded = interval;
+		}
+	}
+	void tick() override {
+		loaded = std::max(0, loaded-1);
+	}
+};
 
 Player::Player(sf::Vector2f position, sf::Vector2f speed) : Body(texture), speed(speed), gun(make_unique<Pistol>(50)) {
 	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height);
@@ -275,6 +327,12 @@ RotatingGiant::RotatingGiant(sf::Vector2f position) : Shot(texture), lifetime(li
 	sprite.setPosition(position);
 }
 
+Laser::Laser(sf::Vector2f position, double angle, int lifetime) : Shot(texture), lifetime(lifetime) {
+	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height);
+	sprite.setPosition(position);
+	sprite.rotate(angle);
+}
+
 void Space::rescale(const sf::RenderWindow& window) {
 /*	float wwidth = window.getView().getSize().y;
 	float wheight = window.getView().getSize().x;
@@ -299,6 +357,10 @@ void Space::explosion(sf::Vector2f position) {
 
 inline void Space::gunToPlayer(unique_ptr<Gun> gun) {
 	players[0]->gun = move(gun);
+}
+
+inline void Space::defaultGun() {
+	gunToPlayer(make_unique<Pistol>(50));
 }
 
 void Space::movePlayer(double multip) {
@@ -326,6 +388,15 @@ void Space::render(sf::RenderWindow& window) const {
 		shot->render(window);
 	for (const auto& player : players)
 		player->render(window);
+
+	int interval = players[0]->gun->interval;
+	int current = interval - players[0]->gun->loaded;
+	double ratio = (double)current/interval;
+	sf::RectangleShape gunLoaded(sf::Vector2f(100*ratio, 10));
+	gunLoaded.setFillColor(sf::Color((1-ratio)*255, ratio*255, 0, 180));
+	gunLoaded.setPosition(width - 100 - 5, height - 15);
+	window.draw(gunLoaded);
+
 }
 
 
@@ -333,7 +404,8 @@ void Space::tick() {
 	if (rand() % 100 < 3) {
 		//bombs have origin in width/2, height/2, therefore + 1/2 ground_block so that they are in the middle
 		double x = (rand()%ground_num + 0.5) * groundSize();
-		bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 2), make_unique<GunBonus>(make_unique<Pistol>(10))));
+		bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 2), make_unique<DummyBonus>()));
+		//make_unique<GunBonus>(make_unique<GiantGun>(3, 1000))));
 	}
 	for (auto& bomb : bombs) 
 		bomb->tick();
@@ -432,6 +504,7 @@ HBTexture Bomb::textures[4];
 HBTexture Player::texture;
 HBTexture Projectile::texture;
 HBTexture RotatingGiant::texture;
+HBTexture Laser::texture;
 
 int main(void) {
 	srand(time(NULL));
@@ -462,6 +535,9 @@ int main(void) {
 	
 	RotatingGiant::texture.loadFromFile("svg/carrot.png");
 	RotatingGiant::texture.setSmooth(true);
+	
+	Laser::texture.loadFromFile("svg/beam.png");
+	Laser::texture.setSmooth(true);
 
 //...!
 #define ws 90
@@ -508,7 +584,7 @@ int main(void) {
 	window.setView(view);
 	sp.rescale(window);
 
-
+	
 
 	while (window.isOpen()) {
 		sf::Event event;
@@ -524,14 +600,16 @@ int main(void) {
                 }       
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space)){
                         sp.players[0]->shoot(sp);
-			sp.shots.push_back(make_unique<RotatingGiant>(sf::Vector2f(400, 400)));
+			//sp.shots.push_back(make_unique<RotatingGiant>(sf::Vector2f(400, 400)));
 			//backs.setPitch(backs.getPitch()*1.0595);
-			pow.play();
+			//pow.play();
                 }
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
 			myfig.move(10,0);
+			sp.gunToPlayer(make_unique<GiantGun>(10,3));
                 }       
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::R)){
+			sp.gunToPlayer(make_unique<RailGun>(0,20, -1));
 			myfig.move(0,10);
                 }       
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::A)){

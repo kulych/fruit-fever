@@ -84,6 +84,6 @@ bool Figure::collides(const Figure& other) const {
 
 void Figure::render(sf::RenderWindow& window) const {
 	window.draw(sprite);
-	for (const std::unique_ptr<Primitive>& prim : hitbox)
-		prim->render(window, position.x, position.y);
+	//for (const std::unique_ptr<Primitive>& prim : hitbox)
+	//	prim->render(window, position.x, position.y);
 }
