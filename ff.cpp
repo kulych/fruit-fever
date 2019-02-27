@@ -49,6 +49,9 @@ class Space {
 	int width, height;
 	sf::Sprite background;
 	int groundSize() { return width / ground_num; }
+	int score;
+	int level;
+	int oldLevel;
 public:
 	ResourceManager& resources;
 	list<unique_ptr<Shot>> shots;
@@ -56,14 +59,16 @@ public:
 	Space(int, int, ResourceManager&);
 	void tick();
 	void rescale(const sf::RenderWindow&);
-	void explosion(sf::Vector2f);
+	void explosion(sf::Vector2f, int);
 	void gunToPlayer(unique_ptr<Gun>);
 	void movePlayer(double);
+	void shoot();
 	void render(sf::RenderWindow&) const;
-	void renderEnding(sf::RenderWindow&) const;
+	void renderEnding(sf::RenderWindow&);
 	void fixOne();
 	void fixAll();
 	bool running() const;
+	int scoreToLevel() const;
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 };
@@ -184,17 +189,18 @@ public:
 };
 
 class RotatingGiant : public Shot {
-	static constexpr int lifelength = 1000;
+	int lifelength;
 	int lifetime;
 public:
-	RotatingGiant(sf::Vector2f, ResourceManager&);
+	RotatingGiant(sf::Vector2f, int, ResourceManager&);
 	void tick() override {
 		if (lifetime <= 0) {
 			alive = false;
 			return;
 		}
 		sprite.rotate(4);
-		sprite.setScale(double(lifetime)/lifelength);
+		double ratio = (double)lifetime/lifelength;
+		sprite.setScale(ratio*ratio*ratio);
 		lifetime--;
 	}
 	void move(double x, double y) {
@@ -254,14 +260,16 @@ public:
 
 class Pistol : public Gun {
 public:
-	Pistol(int loaded, int interval, ResourceManager& resources) : Gun(loaded, interval, -1, resources) {}
-	Pistol(int interval, ResourceManager& resources) : Pistol(0, interval, resources) {}
+	Pistol(int loaded, int interval, int ammo, ResourceManager& resources) : Gun(loaded, interval, ammo, resources) {}
+	Pistol(int interval, ResourceManager& resources) : Pistol(0, interval, -1, resources) {}
 	void shoot(Space& space, Player& player) override{
-		if(loaded == 0) {
+		if (loaded == 0 && ammo != 0) {
 			loaded = interval;
 			space.shots.push_back(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f(-4, -8), resources));
 			space.shots.push_back(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f( 4, -8), resources));
 			resources.getSound("pow").play();
+			if (ammo > 0)
+				ammo--;
 		}
 	}
 	void tick() override {
@@ -282,7 +290,7 @@ public:
 	GiantGun(ResourceManager& resources) : GiantGun(0, 0, 3,resources) {}
 	void shoot(Space& space, Player& player) override {
 		if (loaded == 0 && ammo != 0) {
-			space.shots.push_back(make_unique<RotatingGiant>(sf::Vector2f(rand()%space.getWidth(), rand()%space.getHeight()),resources));
+			space.shots.push_back(make_unique<RotatingGiant>(sf::Vector2f(rand()%space.getWidth(), rand()%space.getHeight()), 1000, resources));
 			loaded = interval;
 			if (ammo > 0)
 				ammo--;
@@ -308,6 +316,7 @@ public:
 			space.shots.push_back(make_unique<Laser>(headPosition, 30, 3, resources));
 			space.shots.push_back(make_unique<Laser>(headPosition,-30, 3, resources));
 			loaded = interval;
+			resources.getSound("railgun").play();
 			if (ammo > 0)
 				ammo--;
 		}
@@ -339,13 +348,13 @@ void Player::shoot(Space& space) {
 }
 
 void Player::die(Space& space) {
-
+	space.explosion(sprite.getPosition(), 10000);
 	alive = false;
 }
 
 
 inline void Player::defaultGun() {
-	gun = make_unique<Pistol>(10, 50, resources);
+	gun = make_unique<Pistol>(10, 50, -1, resources);
 }
 	
 
@@ -397,7 +406,7 @@ void Projectile::tick() {
 	sprite.move(speed);
 }
 
-RotatingGiant::RotatingGiant(sf::Vector2f position, ResourceManager& resources) : Shot(resources.getHBTexture("carrot")), lifetime(lifelength) {
+RotatingGiant::RotatingGiant(sf::Vector2f position, int lifelength, ResourceManager& resources) : Shot(resources.getHBTexture("carrot")), lifelength(lifelength), lifetime(lifelength) {
 	sprite.centerOrigin();
 	//sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height/2.0);
 	sprite.setPosition(position);
@@ -423,9 +432,9 @@ void Space::rescale(const sf::RenderWindow& window) {
 	}*/
 }
 
-void Space::explosion(sf::Vector2f position) {
+void Space::explosion(sf::Vector2f position, int num) {
 	sf::Color clr(rand()%255, rand()%255, rand()%255);
-	for (int i = 0; i < 100; ++i) {
+	for (int i = 0; i < num; ++i) {
 		double speed = rand()%500;
 		double angle = rand()%360 / 180.0 * 3.14159265358979323;
 		double vx = speed * cos(angle);
@@ -439,6 +448,9 @@ inline void Space::gunToPlayer(unique_ptr<Gun> gun) {
 	players[0]->gun = move(gun);
 }
 
+void Space::shoot() {
+	players[0]->shoot(*this);
+}
 
 void Space::fixAll() {
 	for (int i = 0; i < ground_num; i++)
@@ -489,8 +501,10 @@ void Space::render(sf::RenderWindow& window) const {
 		bomb->render(window);
 	for (const auto& shot : shots)
 		shot->render(window);
-	for (const auto& player : players)
-		player->render(window);
+	for (const auto& player : players) {
+		if(player->alive)
+			player->render(window);
+	}
 
 	int interval = players[0]->gun->interval;
 	int current = interval - players[0]->gun->loaded;
@@ -504,33 +518,65 @@ void Space::render(sf::RenderWindow& window) const {
 	ammoText.setPosition(width - 50 - 5 - 7, height - 38);
 	window.draw(ammoText);
 
+	sf::Text scoreText("Score: " + to_string(score), resources.getFont("cmu"), 60);
+	scoreText.setOrigin(scoreText.getGlobalBounds().width/2.0, 0);
+	scoreText.setPosition(width/2.0, 5);
+	window.draw(scoreText);
+
 }
 
-void Space::renderEnding(sf::RenderWindow& window) const {
+void Space::renderEnding(sf::RenderWindow& window) {
+	for (auto& particle : particles) 
+		particle.tick();
 	render(window);
-	sf::Text rip("RIP :-(", resources.getFont("cmu"), 120);
+	sf::Text rip("GAME OVER :-(", resources.getFont("cmu"), 120);
 	rip.setOrigin(rip.getGlobalBounds().width/2.0, rip.getGlobalBounds().height/2.0);
 	rip.setPosition(width/2.0, height/2.0);
 	window.draw(rip);
 }
 
+int Space::scoreToLevel() const {
+	if (score < 10)
+		return 1;
+	if (score < 20)
+		return 2;
+	if (score < 30)
+		return 3;
+	if (score < 50)
+		return 4;
+	if (score < 80)
+		return 6;
+	if (score < 120)
+		return 7;
+	if (score < 160)
+		return 8;
+	return score/40 + 5;
+}
+
 void Space::tick() {
-	if (rand() % 100 < 4) {
-		//bombs have origin in width/2, height/2, therefore + 1/2 ground_block so that they are in the middle
+	level = scoreToLevel();
+	if (level != oldLevel)
+		resources.getSound("background").setPitch(resources.getSound("background").getPitch() * 1.0595);
+	oldLevel = level;
+
+	if (rand() % 100 < level) {
+		//bombs have origin in width/2, height/2, therefore + 1/2 ground_block<F6> so that they are in the middle
 		double x = (rand()%ground_num + 0.5) * groundSize();
 		//bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 2), make_unique<DummyBonus>(resources), resources));
 		//bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 2), make_unique<GunBonus>(make_unique<Pistol>(20, resources), resources), resources));
 		unique_ptr<Bonus> bonus = make_unique<DummyBonus>(resources);
-		if (rand() % 100 < 5) 
+		if (rand() % 100 < 4) 
 			bonus = make_unique<GunBonus>(make_unique<RailGun>(0, 20, 10, resources), resources);
 		else if (rand() % 100 < 5)
 			bonus = make_unique<FixBonus>(1, resources);
 		else if (rand() % 100 < 1)
 			bonus = make_unique<FixBonus>(-1, resources);
 		else if (rand() % 100 < 2)
-			bonus = make_unique<GunBonus>(make_unique<GiantGun>(10, 3, resources), resources);
+			bonus = make_unique<GunBonus>(make_unique<GiantGun>(10, 1 , resources), resources);
+		else if (rand() % 100 < 2)
+			bonus = make_unique<GunBonus>(make_unique<Pistol>(0, 5, 50, resources), resources);
 
-		bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 3), move(bonus), resources));
+		bombs.push_back(make_unique<Bomb>(sf::Vector2f(x, 0), sf::Vector2f(0, 3 + level/5.0), move(bonus), resources));
 	}
 	for (auto& bomb : bombs) 
 		bomb->tick();
@@ -554,10 +600,11 @@ void Space::tick() {
 
 			if((*bomb)->collides(*(*shot))) {
 //			if ((*bomb)->sprite.getGlobalBounds().intersects((*shot)->sprite.getGlobalBounds())) {
-				explosion((*bomb)->sprite.getPosition());
+				explosion((*bomb)->sprite.getPosition(), 100);
 				(*bomb)->hit(*this);
 				bombs.erase(bomb++);
 				(*shot)->hit(*this);
+				score++;
 //				shots.erase(shot);
 				destroyed = true;
 				break;
@@ -570,6 +617,8 @@ void Space::tick() {
 			while (player != players.end()) {
 				if((*bomb)->collides(*(*player))) {
 					cout << "DEAD" << endl;
+					resources.getSound("background").stop();
+					resources.getSound("gameover").play();
 					(*player)->die(*this);
 				}
 				player++;
@@ -609,7 +658,7 @@ void Space::tick() {
 
 }
 
-Space::Space(int width, int height, ResourceManager& resources) : width(width), height(height), ground_num(30), resources(resources), background(resources.getTexture("background")) {	
+Space::Space(int width, int height, ResourceManager& resources) : width(width), height(height), ground_num(30), resources(resources), background(resources.getTexture("background")), score(0), level(1), oldLevel(1) {	
 	double rat = (double)height/background.getGlobalBounds().height;
 	background.setScale(rat,rat);
 	for (int i = 0; i < ground_num; ++i) {
@@ -641,7 +690,9 @@ bool loadData(ResourceManager& resources) {
 	cload(Texture, "giantgun", "svg/giantgun.png");
 	cload(Texture, "railgun", "svg/railgun.png");
 	cload(Sound, "pow", "sounds/pow.wav");
+	cload(Sound, "railgun", "sounds/railgun.wav");
 	cload(Sound, "background", "sounds/bceq.wav");
+	cload(Sound, "gameover", "sounds/gameover.wav");
 	cload(Font, "cmu", "cmunrm.otf");
 
 	return true;
@@ -690,9 +741,8 @@ int main(void) {
 			sp.movePlayer(1);
                 }       
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space)){
-                        sp.players[0]->shoot(sp);
+                        sp.shoot();
 			//sp.shots.push_back(make_unique<RotatingGiant>(sf::Vector2f(400, 400)));
-			//backs.setPitch(backs.getPitch()*1.0595);
 			//pow.play();
                 }
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::S)){
