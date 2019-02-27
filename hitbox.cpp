@@ -13,11 +13,16 @@ HBTexture::HBTexture(const sf::Texture& texture, const std::vector<std::unique_p
 	}
 }
 
-void HBTexture::loadFromFile(const std::string& path) {
-	texture.loadFromFile(path);
+bool HBTexture::loadFromFile(const std::string& path) {
+	if (!texture.loadFromFile(path))
+		return false;
+
 	std::cout << "loaded" << std::endl;
 	std::ifstream fil;
 	fil.open(path + ".hb");
+	if (!fil.good())
+		return false;
+
 	std::cout << path << std::endl;
 	double x, y, x2, y2, r;
 	std::string type;
@@ -35,6 +40,7 @@ void HBTexture::loadFromFile(const std::string& path) {
 			std::cout << "add line " << path <<std::endl;
 		}
 	}
+	return true;
 }
 
 Figure::Figure() : position(sf::Vector2f(0,0)) {
