@@ -12,10 +12,13 @@ public:
 	sf::Texture texture;
 	std::vector<std::unique_ptr<Primitive>> hitbox;
 	HBTexture() {}
-	HBTexture(const std::string& path) { loadFromFile(path); }
+	HBTexture(const std::string& path) {
+		if (!loadFromFile(path))
+			throw std::runtime_error("Could not open file " + path);
+	}
 	HBTexture(const sf::Texture& texture, std::vector<std::unique_ptr<Primitive>>&& hitbox) : texture(texture), hitbox(move(hitbox)) {}
 	HBTexture(const sf::Texture&, const std::vector<std::unique_ptr<Primitive>>&);
-	void loadFromFile(const std::string&);
+	bool loadFromFile(const std::string&);
 	void setSmooth(bool set) { texture.setSmooth(set); }
 };
 

@@ -20,10 +20,10 @@ public:
 	const sf::Font& getFont(const std::string&) const;
 	sf::Sound& getSound(const std::string&);
 	//loads and makes Smooth
-	void loadTexture(const std::string&, const std::string&);	
-	void loadHBTexture(const std::string&, const std::string&);	
-	void loadSound(const std::string&, const std::string&);	
-	void loadFont(const std::string&, const std::string&);
+	bool loadTexture(const std::string&, const std::string&);	
+	bool loadHBTexture(const std::string&, const std::string&);	
+	bool loadSound(const std::string&, const std::string&);	
+	bool loadFont(const std::string&, const std::string&);
 };
 
 #endif

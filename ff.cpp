@@ -47,6 +47,7 @@ class Space {
 	list<Particle> particles;
 	list<unique_ptr<Bomb>> bombs;
 	int width, height;
+	sf::Sprite background;
 	int groundSize() { return width / ground_num; }
 public:
 	ResourceManager& resources;
@@ -59,8 +60,10 @@ public:
 	void gunToPlayer(unique_ptr<Gun>);
 	void movePlayer(double);
 	void render(sf::RenderWindow&) const;
+	void renderEnding(sf::RenderWindow&) const;
 	void fixOne();
 	void fixAll();
+	bool running() const;
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 };
@@ -177,7 +180,7 @@ class Projectile : public Shot {
 public:
 	Projectile(sf::Vector2f, sf::Vector2f, ResourceManager&);
 	void tick() override;
-	void hit(Space &sp) override { alive = false; cout << "I HIT" << endl;}
+	void hit(Space &sp) override { alive = false; }
 };
 
 class RotatingGiant : public Shot {
@@ -197,7 +200,7 @@ public:
 	void move(double x, double y) {
 		sprite.move(x,y);
 	}
-	void hit(Space &sp) override {cout << "BIG HIT BABY" << endl;}
+	void hit(Space &sp) override {}
 };
 
 class Laser : public Shot {
@@ -209,7 +212,7 @@ public:
 			alive = false;
 		lifetime--;
 	}
-	void hit(Space &sp) override { cout << "LASER HIT" << endl; }
+	void hit(Space &sp) override {}
 };
 
 class Player : public Body{
@@ -218,11 +221,13 @@ class Player : public Body{
 public:
 	unique_ptr<Gun> gun;
 	Player(sf::Vector2f, sf::Vector2f, ResourceManager&);
+	bool alive;
 	void tick();
 	void moveLimit(double, double, double);
 	void move(float);
 	void defaultGun();
 	void shoot(Space&);
+	void die(Space&);
 };
 
 class Particle {
@@ -249,17 +254,15 @@ public:
 
 class Pistol : public Gun {
 public:
-	Pistol(int interval, ResourceManager& resources) : Gun(0, interval, -1, resources) {}
+	Pistol(int loaded, int interval, ResourceManager& resources) : Gun(loaded, interval, -1, resources) {}
+	Pistol(int interval, ResourceManager& resources) : Pistol(0, interval, resources) {}
 	void shoot(Space& space, Player& player) override{
 		if(loaded == 0) {
 			loaded = interval;
 			space.shots.push_back(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f(-4, -8), resources));
 			space.shots.push_back(make_unique<Projectile>(player.sprite.getPosition(), sf::Vector2f( 4, -8), resources));
 			resources.getSound("pow").play();
-			cout << "POWWW" << endl;
 		}
-		else
-			cout << "--NOTLOADED " << loaded << "/" << interval << endl;
 	}
 	void tick() override {
 		loaded = std::max(0, loaded - 1);
@@ -284,14 +287,12 @@ public:
 			if (ammo > 0)
 				ammo--;
 		}
-		else
-			cout << "--NOTLOADED " << loaded << "/" << interval << endl;
 	}
 	void tick() override {
 		loaded = std::max(0, loaded-1);
 	}
 	void render(sf::RenderWindow& window, sf::Vector2f position) const {
-		sf::Sprite sprite(resources.getTexture("carrot"));
+		sf::Sprite sprite(resources.getTexture("giantgun"));
 		sprite.scale(0.2, 0.2);
 		sprite.setPosition(position);
 		window.draw(sprite);
@@ -321,7 +322,7 @@ public:
 	}
 };
 
-Player::Player(sf::Vector2f position, sf::Vector2f speed, ResourceManager& resources) : Body(resources.getHBTexture("bunny")), speed(speed), resources(resources), gun(make_unique<Pistol>(50, resources)) {
+Player::Player(sf::Vector2f position, sf::Vector2f speed, ResourceManager& resources) : Body(resources.getHBTexture("bunny")), speed(speed), resources(resources), gun(make_unique<Pistol>(50, resources)), alive(true) {
 	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height);
 	sprite.scale(0.25);
 	sprite.setPosition(position);
@@ -337,8 +338,14 @@ void Player::shoot(Space& space) {
 	gun->shoot(space, *this);
 }
 
+void Player::die(Space& space) {
+
+	alive = false;
+}
+
+
 inline void Player::defaultGun() {
-	gun = make_unique<Pistol>(50, resources);
+	gun = make_unique<Pistol>(10, 50, resources);
 }
 	
 
@@ -349,8 +356,6 @@ void Player::move(float multip) {
 void Player::moveLimit(double left, double right, double multip) {
 	double px = sprite.getPosition().x;
 	double newx = px + multip*speed.x;
-	cout << left << " " << right << endl;
-	cout << "NEWX " << newx << endl;
 	if (newx >= left && newx < right) 
 		move(multip);
 	else if (newx >= right) 
@@ -402,6 +407,10 @@ Laser::Laser(sf::Vector2f position, double angle, int lifetime, ResourceManager&
 	sprite.setOrigin(sprite.getGlobalBounds().width/2.0, sprite.getGlobalBounds().height);
 	sprite.setPosition(position);
 	sprite.rotate(angle);
+}
+
+bool Space::running() const {
+	return players[0]->alive;
 }
 
 void Space::rescale(const sf::RenderWindow& window) {
@@ -469,6 +478,7 @@ void Space::movePlayer(double multip) {
 
 void Space::render(sf::RenderWindow& window) const {
 	//window dimensions
+	window.draw(background);
 	for (int i = 0; i < ground_num; ++i) {
 		if (ground_alive[i])
 			window.draw(ground[i]);
@@ -496,6 +506,13 @@ void Space::render(sf::RenderWindow& window) const {
 
 }
 
+void Space::renderEnding(sf::RenderWindow& window) const {
+	render(window);
+	sf::Text rip("RIP :-(", resources.getFont("cmu"), 120);
+	rip.setOrigin(rip.getGlobalBounds().width/2.0, rip.getGlobalBounds().height/2.0);
+	rip.setPosition(width/2.0, height/2.0);
+	window.draw(rip);
+}
 
 void Space::tick() {
 	if (rand() % 100 < 4) {
@@ -541,7 +558,6 @@ void Space::tick() {
 				(*bomb)->hit(*this);
 				bombs.erase(bomb++);
 				(*shot)->hit(*this);
-				cout << "kolidoval jsem s bombou" << endl;
 //				shots.erase(shot);
 				destroyed = true;
 				break;
@@ -554,13 +570,13 @@ void Space::tick() {
 			while (player != players.end()) {
 				if((*bomb)->collides(*(*player))) {
 					cout << "DEAD" << endl;
+					(*player)->die(*this);
 				}
 				player++;
 			}
 			bomb++;
 		}
 	}
-	//cout << "nepocitam" << endl;
 
 
 	auto it = bombs.begin();
@@ -593,7 +609,9 @@ void Space::tick() {
 
 }
 
-Space::Space(int width, int height, ResourceManager& resources) : width(width), height(height), ground_num(30), resources(resources) {	
+Space::Space(int width, int height, ResourceManager& resources) : width(width), height(height), ground_num(30), resources(resources), background(resources.getTexture("background")) {	
+	double rat = (double)height/background.getGlobalBounds().height;
+	background.setScale(rat,rat);
 	for (int i = 0; i < ground_num; ++i) {
 		ground_alive.push_back(true);
 		ground.emplace_back(resources.getTexture("block"));
@@ -602,36 +620,44 @@ Space::Space(int width, int height, ResourceManager& resources) : width(width), 
 		ground[i].setOrigin(0, ground[i].getGlobalBounds().height-ground[i].getGlobalBounds().width);
 		ground[i].setPosition(i*groundSize(), height-groundSize());
 	}
-	cout << "GSIZE " << groundSize() << "HEIG " << ground[0].getGlobalBounds().height << endl;
 	players.push_back(make_unique<Player>(sf::Vector2f(width/2, height-groundSize()), sf::Vector2f(10, 0),resources));
 	resources.getSound("background").setLoop(true);
 	resources.getSound("background").play();
 }
 
+bool loadData(ResourceManager& resources) {
+#define cload(type, name, path) if (!resources.load ##type(name, path)) { cout << "Failed to load " << #type << ", path: " << path << endl; return false; }
+	cload(HBTexture, "apple", "svg/apple.png");
+	cload(HBTexture, "lemon", "svg/lemon.png");
+	cload(HBTexture, "orange", "svg/orange.png");
+	cload(HBTexture, "pear", "svg/pear.png");
+	cload(HBTexture, "bunny", "svg/bunny.png");
+	cload(HBTexture, "beam", "svg/beam.png");
+	cload(HBTexture, "carrot", "svg/carrot.png");
+	cload(Texture, "carrot", "svg/carrot.png");
+	cload(Texture, "background", "svg/background.png");
+	cload(Texture, "block", "svg/block.png");
+	cload(Texture, "pistol", "svg/pistol.png");
+	cload(Texture, "giantgun", "svg/giantgun.png");
+	cload(Texture, "railgun", "svg/railgun.png");
+	cload(Sound, "pow", "sounds/pow.wav");
+	cload(Sound, "background", "sounds/bceq.wav");
+	cload(Font, "cmu", "cmunrm.otf");
+
+	return true;
+#undef cload
+}
+
 int main(void) {
+//	sf::err().rdbuf(NULL);
 	srand(time(NULL));
 
 	ResourceManager resources;
-	resources.loadHBTexture("apple", "svg/apple.png");
-	resources.loadHBTexture("lemon", "svg/lemon.png");
-	resources.loadHBTexture("orange", "svg/orange.png");
-	resources.loadHBTexture("pear", "svg/pear.png");
-	resources.loadHBTexture("bunny", "svg/bunny.png");
-	resources.loadHBTexture("beam", "svg/beam.png");
-	resources.loadHBTexture("carrot", "svg/carrot.png");
-	resources.loadTexture("carrot", "svg/carrot.png");
-	resources.loadTexture("background", "svg/background.png");
-	resources.loadTexture("block", "svg/block.png");
-	resources.loadTexture("pistol", "svg/pistol.png");
-	resources.loadTexture("giantgun", "svg/gaintgun.png");
-	resources.loadTexture("railgun", "svg/railgun.png");
-	resources.loadSound("pow", "sounds/pow.wav");
-	resources.loadSound("background", "sounds/bceq.wav");
-	resources.loadFont("cmu", "cmunrm.otf");
+	if (!loadData(resources)) {
+		cout << "Exiting." << endl;
+		return -1;
+	}
 
-	sf::Texture background;
-	background.loadFromFile("svg/background.png");
-	sf::Sprite bg(background);
 
 
 //...!
@@ -643,9 +669,6 @@ int main(void) {
 	window.setVerticalSyncEnabled(true);
 	sf::View view(sf::FloatRect(0,0,16*ws,9*ws));
 	
-	double rat = ((double)view.getSize().y)/background.getSize().y;
-	bg.setScale(rat,rat);
-	cout << window.getSize().x << " " << background.getSize().x << endl;
 	//bg.setScale(0.5, 0.5);
 
 		
@@ -654,7 +677,7 @@ int main(void) {
 
 	
 
-	while (window.isOpen()) {
+	while (window.isOpen() && sp.running()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			if (event.type == sf::Event::Closed)
@@ -684,12 +707,21 @@ int main(void) {
                 }
 
 		window.clear();
-		window.draw(bg);
 		sp.render(window);
 		window.display();
 
 		sp.tick();
-		//cout << (myfig.collides((*(sp.players[0])).sprite) ? "KOLIZE" : "NIC") << endl;
+	}
+
+	while (window.isOpen() ) {
+		sf::Event event;
+		while (window.pollEvent(event)) {
+			if (event.type == sf::Event::Closed)
+				window.close();
+		}
+		window.clear();
+		sp.renderEnding(window);
+		window.display();
 	}
 	return 0;
 }

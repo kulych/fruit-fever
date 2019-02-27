@@ -15,39 +15,59 @@ const HBTexture& ResourceManager::getHBTexture(const std::string& name) const {
 	try { 
 		return hbtextures.at(name);
 	}
-	catch (...){
-		std::cout << "nemam HBtexturu " << name << std::endl;
-		return hbtextures.at("beam");
+	catch (std::out_of_range& x) {
+		throw std::out_of_range("HBTexture " + name + " not loaded!");
 	}
 }
 
 const sf::Texture& ResourceManager::getTexture(const std::string& name) const {
-	return textures.at(name);
+	try{
+		return textures.at(name);
+	}
+	catch (std::out_of_range& x) {
+		throw std::out_of_range("Texture " + name + " not loaded!");
+	}
 }
 
 const sf::Font& ResourceManager::getFont(const std::string& name) const {
-	return fonts.at(name);
+	try {
+		return fonts.at(name);
+	}
+	catch (std::out_of_range& x) {
+		throw std::out_of_range("Font " + name + " not loaded!");
+	}
 }
 
 sf::Sound& ResourceManager::getSound(const std::string& name) {
-	return sounds.at(name);
+	try {
+		return sounds.at(name);
+	}
+	catch (std::out_of_range& x) {
+		throw std::out_of_range("Sound " + name + " not loaded!");
+	}
 }
 
-void ResourceManager::loadHBTexture(const std::string& key, const std::string& path) {
-	hbtextures[key].loadFromFile(path);
+bool ResourceManager::loadHBTexture(const std::string& key, const std::string& path) {
+	if (!hbtextures[key].loadFromFile(path))
+		return false;
 	hbtextures[key].setSmooth(true);
+	return true;
 }
 
-void ResourceManager::loadTexture(const std::string& key, const std::string& path) {
-	textures[key].loadFromFile(path);
+bool ResourceManager::loadTexture(const std::string& key, const std::string& path) {
+	if (!textures[key].loadFromFile(path))
+		return false;
 	hbtextures[key].setSmooth(true);
+	return true;
 }
 
-void ResourceManager::loadFont(const std::string& key, const std::string& path) {
-	fonts[key].loadFromFile(path);
+bool ResourceManager::loadFont(const std::string& key, const std::string& path) {
+	return fonts[key].loadFromFile(path);
 }
 
-void ResourceManager::loadSound(const std::string& key, const std::string& path) {
-	soundBuffers[key].loadFromFile(path);
+bool ResourceManager::loadSound(const std::string& key, const std::string& path) {
+	if (!soundBuffers[key].loadFromFile(path))
+		return false;
 	sounds[key] = sf::Sound(soundBuffers[key]);
+	return true;
 }
