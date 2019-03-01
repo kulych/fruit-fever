@@ -1,7 +1,7 @@
 #include <iostream>
-#include "game.hpp"
 #include <cstdlib>
 #include <ctime>
+#include "game.hpp"
 
 void FixBonus::apply(Game& game) {
 	if (amount == -1)
@@ -153,7 +153,8 @@ void GiantGun::shoot(Game& game, Player& player) {
 //GiantGun renders as texture 'giantgun'
 void GiantGun::render(sf::RenderWindow& window, sf::Vector2f position) const {
 	sf::Sprite sprite(resources.getTexture("giantgun"));
-	sprite.scale(0.2, 0.2);
+	sprite.setOrigin(sprite.getGlobalBounds().width/2, sprite.getGlobalBounds().height/2);
+	sprite.scale(0.15, 0.15);
 	sprite.setPosition(position);
 	window.draw(sprite);
 }
@@ -175,6 +176,7 @@ void RailGun::shoot(Game& game, Player& player) {
 //RailGun renders as texture 'railgun'
 void RailGun::render(sf::RenderWindow& window, sf::Vector2f position) const {
 	sf::Sprite sprite(resources.getTexture("railgun"));
+	sprite.setOrigin(sprite.getGlobalBounds().width/2, sprite.getGlobalBounds().height/2);
 	sprite.setPosition(position);
 	window.draw(sprite);
 }
@@ -333,7 +335,6 @@ void Game::renderEnding(sf::RenderWindow& window) {
 
 //Hand-crafted game difficulty curve, mapping from score to level
 int Game::scoreToLevel() const {
-	return 20;
 	if (score < 10)
 		return 1;
 	if (score < 20)
@@ -498,6 +499,7 @@ Game::Game(int width, int height, ResourceManager& resources) : ground_num(30), 
 	players.push_back(std::make_unique<Player>(sf::Vector2f(width/2, height-groundSize()), sf::Vector2f(10, -1),resources));
 
 	resources.getSound("background").setLoop(true);
+	resources.getSound("background").setVolume(80);
 	resources.getSound("background").play();
 }
 

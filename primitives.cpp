@@ -1,11 +1,11 @@
-#include "primitives.hpp"
 #include <cmath>
 #include <utility>
 #include <memory>
+#include <SFML/Graphics.hpp>
+#include "primitives.hpp"
 
 //SMAZAT INCLUDE
 #include <iostream>
-#include <SFML/Graphics.hpp>
 
 
 //#OTAZKA, chtel bych mit v "knihovne" funkci, kterou pouziva vice funkci v ruznych tridach (napr _rotate_point, _distance)
@@ -22,6 +22,7 @@ std::pair<double, double> _rotate_point(double x, double y, double cx, double cy
 	return {nx + cx, ny + cy};
 }
 
+//Two point distance
 double _distance(double ax, double ay, double bx, double by) {
 	double dx = bx-ax;
 	double dy = by-ay;
@@ -84,8 +85,29 @@ bool Line::intersects(const Primitive& other, double sx, double sy) const {
 }
 
 bool Line::_intersects(const Line& other, double sx, double sy) const {
-	std::cout << "__MISSING CODE :-)__" << std::endl;
-	return true;
+	Line shifted = other;
+	shifted.shift(sx,sy);
+
+	//checks if x is between a and b,
+	//a and b can be arbitrary ordered
+	auto between = [](double a, double b, double x)->bool { return std::min(a,b) <= x && x <= std::max(a,b); };
+
+	//Parallel
+	if (b()*shifted.a() == a()*shifted.b()) {
+		//identical
+		if (c() == shifted.c()){
+			//At least one endpoint of the other line must be between my endpoints
+			if (between(ax, bx, shifted.ax) || between(ax, bx, shifted.bx))
+				return true;
+			return false;
+		}
+		return false;
+	}
+	
+	double px = (c()*shifted.b() - b()*shifted.c()) / (b()*shifted.a() - a()*shifted.b());
+	//double py = (a()*shifted.c() - c()*shifted.a()) / (b()*shifted.a() - a()*shifted.b());
+
+	return between(ax, bx, px) && between(shifted.ax, shifted.bx, px);
 }
 
 double Line::a() const {
@@ -108,13 +130,17 @@ bool Line::_intersects(const Circle& other, double sx, double sy) const {
 	//their intersection (= projection of cx, cy to *this line) is 
 	double k = a() * cy - b() * cx;
 	double px = -(b()*k + a()*c())/(a()*a() + b()*b());
-	double py = (k*a()-c()*b())/(a()*a() + b()*b());
+	//double py = (k*a()-c()*b())/(a()*a() + b()*b());
 
 	double distance = abs(a() * cx + b() * cy + c())/(sqrt(a()*a() + b()*b()));
+	
+	//checks if x is between a and b,
+	//a and b can be arbitrary ordered
+	auto between = [](double a, double b, double x)->bool { return std::min(a,b) <= x && x <= std::max(a,b); };
 
 	//If projection is on the line segment, use that as the circle-line distance measuring point, otherwise use the 
 	//closer end of line segment
-	if (px >= std::min(ax, bx) && px <= std::max(ax,bx) && py >= std::min(ay,by) && py <= std::max(ay,by))
+	if (between(ax, bx, px))
 		return distance <= other.r;
 	else{
 		return std::min(_distance(cx, cy, ax, ay), _distance(cx, cy, bx, by)) <= other.r;

@@ -27,6 +27,7 @@ bool loadData(ResourceManager& resources) {
 	cload(Sound, "railgun", "sounds/railgun.wav");
 	cload(Sound, "background", "sounds/bceq.wav");
 	cload(Sound, "gameover", "sounds/gameover.wav");
+	cload(Sound, "buch", "sounds/buch.wav");
 	cload(Font, "cmu", "cmunrm.otf");
 	return true;
 #undef cload
@@ -66,11 +67,12 @@ int main(void) {
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			sp.shoot();
 
+		//#DEBUG
 		//These are cheats - give player a desired gun, for testing porposes :-)
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
 			sp.gunToPlayer(make_unique<GiantGun>(resources));
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-			sp.gunToPlayer(make_unique<RailGun>(0, 5, 10, resources));
+			sp.gunToPlayer(make_unique<RailGun>(0, 10, 10, resources));
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::E))
 			sp.gunToPlayer(make_unique<Pistol>(0, 10, 50, resources));
 
