@@ -18,10 +18,11 @@ Bonuses:
 1. Guns (GIANT ROTATING CARROT, Railgun, Machingun)
 2. Block fixers (yellow block fixes everything, normal block fixes only one)
 
-Background music made in Milkytracker
-Gun sounds made by my vocal chords :-)
-All pictures made by me 
-Font from http://cm-unicode.sourceforge.net/
+Multimedia:
+- Background music made in Milkytracker
+- Gun sounds made by my vocal chords :-)
+- All pictures made by me 
+- Font from http://cm-unicode.sourceforge.net/
 
 Installation
 ------------
