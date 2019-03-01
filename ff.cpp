@@ -10,19 +10,19 @@ using namespace std;
 //Outputs error if an loading error occures
 bool loadData(ResourceManager& resources) {
 #define cload(type, name, path) if (!resources.load ##type(name, path)) { cerr<< "Failed to load " << #type << ", path: " << path << endl; return false; }
-	cload(HBTexture, "apple", "svg/apple.png");
-	cload(HBTexture, "lemon", "svg/lemon.png");
-	cload(HBTexture, "orange", "svg/orange.png");
-	cload(HBTexture, "pear", "svg/pear.png");
-	cload(HBTexture, "bunny", "svg/bunny.png");
-	cload(HBTexture, "beam", "svg/beam.png");
-	cload(HBTexture, "carrot", "svg/carrot.png");
-	cload(Texture, "carrot", "svg/carrot.png");
-	cload(Texture, "background", "svg/background.png");
-	cload(Texture, "block", "svg/block.png");
-	cload(Texture, "pistol", "svg/pistol.png");
-	cload(Texture, "giantgun", "svg/giantgun.png");
-	cload(Texture, "railgun", "svg/railgun.png");
+	cload(HBTexture, "apple", "images/apple.png");
+	cload(HBTexture, "lemon", "images/lemon.png");
+	cload(HBTexture, "orange", "images/orange.png");
+	cload(HBTexture, "pear", "images/pear.png");
+	cload(HBTexture, "bunny", "images/bunny.png");
+	cload(HBTexture, "beam", "images/beam.png");
+	cload(HBTexture, "carrot", "images/carrot.png");
+	cload(Texture, "carrot", "images/carrot.png");
+	cload(Texture, "background", "images/background.png");
+	cload(Texture, "block", "images/block.png");
+	cload(Texture, "pistol", "images/pistol.png");
+	cload(Texture, "giantgun", "images/giantgun.png");
+	cload(Texture, "railgun", "images/railgun.png");
 	cload(Sound, "pow", "sounds/pow.wav");
 	cload(Sound, "railgun", "sounds/railgun.wav");
 	cload(Sound, "background", "sounds/bceq.wav");

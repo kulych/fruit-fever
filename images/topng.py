@@ -9,7 +9,9 @@ ratio = width/float(origdim[0])
 print(str(float(origdim[0])*ratio) + " " + str(float(origdim[1])*ratio), file=out)
 
 for line in fil:
-	print(" ".join(map(lambda x: str(ratio*float(x)), line.strip().split(' '))), file=out)
+	sp = line.strip().split(' ')
+	print(sp[0] + " ", end="", file=out)
+	print(" ".join(map(lambda x: str(ratio*float(x)), sp[1:])), file=out)
 
 fil.close()
 out.close()
