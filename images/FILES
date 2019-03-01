@@ -1,0 +1,12 @@
+*.svg - Vector graphics
+*.png - exported svgs with the right size
+*.sq - intermediate hitbox file, contains values exported from Inkscape
+*.hb - hitbox file (belongs to * image file)
+
+topng.py carrot 500 //exports carrot.svg to carrot.png, width=500 and creates hitbox file
+parse.py carrot //translates carrot.svg.sq to carrot.svg.hb
+
+.hb file format:
+WIDTH HEIGHT //of the image
+L X1 Y1 X2 Y2 //Line segment from X1 Y1 to X2 Y2
+C X Y R //Circle with centre at X Y and diameter R

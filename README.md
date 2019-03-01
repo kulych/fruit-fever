@@ -18,6 +18,14 @@ Bonuses:
 1. Guns (GIANT ROTATING CARROT, Railgun, Machingun)
 2. Block fixers (yellow block fixes everything, normal block fixes only one)
 
+Installation
+------------
+Check the INSTALL file
+
+Source files description
+------------------------
+Check the FILES file
+
 <img src="https://github.com/kulych/fruit-fever/blob/master/sample_images/ingame.png" width="600"/>
 <img src="https://github.com/kulych/fruit-fever/blob/master/sample_images/machinegun.png" width="600"/>
 <img src="https://github.com/kulych/fruit-fever/blob/master/sample_images/gameover.png" width="600"/>

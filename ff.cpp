@@ -5,9 +5,14 @@
 
 using namespace std;
 
+//For debugging mode look for #DEBUG tags and follow given instructions
+
 
 //Fills resource manager with multimedial data
 //Outputs error if an loading error occures
+//#OTAZKA Tenhle typ relativnich cest vyzaduje, aby se vysledna binarka
+//spoustela z korenovy slozky projektu, je to problem, pripadne co s tim,
+//pokud nechci balit vsechna do binarky?
 bool loadData(ResourceManager& resources) {
 #define cload(type, name, path) if (!resources.load ##type(name, path)) { cerr<< "Failed to load " << #type << ", path: " << path << endl; return false; }
 	cload(HBTexture, "apple", "images/apple.png");

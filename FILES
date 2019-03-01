@@ -1,0 +1,7 @@
+Source files:
+	ff.cpp - main source
+
+	game.hpp - Game logic
+	primitives.hpp - Circle/Line collision geometry 
+	hitbox.hpp - Hitbox collisions, encapsulates primitives and texture
+	resources.hpp - ResourceManager - multimedia loading/reading

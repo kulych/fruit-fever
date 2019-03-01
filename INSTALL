@@ -1,0 +1,6 @@
+Install SFML library (program written using version 2.5.1)
+
+$ make
+$ ./ff
+
+And play!

@@ -6,6 +6,9 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+//#OTAZKA mam includovat znovu to, co je includovane uz v .hpp?
+//je prehlednejsi, ze je na zacatku souboru videt, co se v nem pouziva
+//ale je to zbytecne
 
 //Loads separately from texture and hitbox (vector of primitives)
 HBTexture::HBTexture(const sf::Texture& texture, const std::vector<std::unique_ptr<Primitive>>& hitbox) : texture(texture) {
