@@ -7,6 +7,7 @@
 #include <iostream>
 #include <fstream>
 
+//Loads separately from texture and hitbox (vector of primitives)
 HBTexture::HBTexture(const sf::Texture& texture, const std::vector<std::unique_ptr<Primitive>>& hitbox) : texture(texture) {
 	for (const std::unique_ptr<Primitive>& prim : hitbox) { 
 		(this->hitbox).push_back(std::move(prim->clone()));
@@ -14,39 +15,42 @@ HBTexture::HBTexture(const sf::Texture& texture, const std::vector<std::unique_p
 }
 
 bool HBTexture::loadFromFile(const std::string& path) {
+	//Actual texture
 	if (!texture.loadFromFile(path))
 		return false;
 
-	std::cout << "loaded" << std::endl;
+	//Hitbox information 
 	std::ifstream fil;
 	fil.open(path + ".hb");
 	if (!fil.good())
 		return false;
 
-	std::cout << path << std::endl;
 	double x, y, x2, y2, r;
 	std::string type;
+
+	//First line contains two fields - width and height
+	//These two must match the actual texture size, so they are skipped
 	fil >> x >> y;
+	
+	//Each other line contains one hitbox primitev
 	while(!fil.eof()) {
 		fil >> type;
+		//first field specifies the type of hitbox primitive C = circle, L = line
 		if (type == "C") {
 			fil >> x >> y >> r;
 			hitbox.push_back(std::make_unique<Circle>(x,y,r));
-			std::cout << "add circ " << x << " " << y << " " << r << std::endl;
 		}
 		else if (type == "L") {
 			fil >> x >> y >> x2 >> y2;
 			hitbox.push_back(std::make_unique<Line>(x,y,x2,y2));
-			std::cout << "add line " << path <<std::endl;
 		}
 	}
 	return true;
 }
 
-Figure::Figure() : position(sf::Vector2f(0,0)) {
-}
+Figure::Figure() : position(sf::Vector2f(0,0)) { }
 
-Figure::Figure(const HBTexture& texture) : sprite(texture.texture), position(sf::Vector2f(0,0)) {
+Figure::Figure(const HBTexture& texture) : position(sf::Vector2f(0,0)), sprite(texture.texture) {
 	for (const std::unique_ptr<Primitive>& prim : texture.hitbox) { 
 		hitbox.push_back(std::move(prim->clone()));
 	}
@@ -59,6 +63,7 @@ void Figure::setTexture(const HBTexture& texture) {
 	}
 }
 
+//Sets origin to x,y (x,y is in object-local coordinate - ignores transformations)
 void Figure::setOrigin(double x, double y) {
 	sprite.setOrigin(x,y);
 	sf::Vector2f new_origin = sprite.getOrigin()*sprite.getScale().x;
@@ -68,10 +73,12 @@ void Figure::setOrigin(double x, double y) {
 		prim->shift(dif.x, dif.y);
 }
 
+//Sets origin to center
 void Figure::centerOrigin() {
 	setOrigin(getGlobalBounds().width/2, getGlobalBounds().height/2);
 }
 
+//Scales by ration in both axes (reflects previous scalings)
 void Figure::scale(double ratio) {
 	sprite.scale(ratio, ratio);
 	origin = (float)ratio*sprite.getOrigin();
@@ -84,13 +91,20 @@ void Figure::setScale(double ratio) {
 	scale(compensation);
 }
 
+//Rotates by angle (given in degrees) around origin
 void Figure::rotate(double angle) {
 	for (std::unique_ptr<Primitive>& prim : hitbox)
+		//origin is 0,0 in hitbox coordinate system (primitives are shift every time origin changes)
 		prim->rotate(0, 0, angle);
 	sprite.rotate(angle);
 }
 
+//Detects a collision between two Figures
+//First checks bounding rectangles, if they intersect, calculates precise collision
+//using hitbox primitives (tests every pair primA primB)
 bool Figure::collides(const Figure& other) const {
+	if (!sprite.getGlobalBounds().intersects(other.sprite.getGlobalBounds()))
+		return false;
 	for (const std::unique_ptr<Primitive>& primA : hitbox) {
 		for (const std::unique_ptr<Primitive>& primB : other.hitbox) {
 			//shift him to me
@@ -104,6 +118,8 @@ bool Figure::collides(const Figure& other) const {
 
 void Figure::render(sf::RenderWindow& window) const {
 	window.draw(sprite);
+	//#DEBUG These two commented lines render hitbox
 	//for (const std::unique_ptr<Primitive>& prim : hitbox)
 	//	prim->render(window, position.x, position.y);
 }
+

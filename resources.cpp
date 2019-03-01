@@ -9,8 +9,6 @@
 
 ResourceManager::ResourceManager() {}
 
-//nonexistent -> exception?
-//at misto [] protoze, [] nevraci const ref.
 const HBTexture& ResourceManager::getHBTexture(const std::string& name) const {
 	try { 
 		return hbtextures.at(name);

@@ -7,6 +7,9 @@
 #include <iostream>
 #include <SFML/Graphics.hpp>
 
+
+//#OTAZKA, chtel bych mit v "knihovne" funkci, kterou pouziva vice funkci v ruznych tridach (napr _rotate_point, _distance)
+//Zaroven asi nechci, aby se vtirala vsude, kam si nekdo knihovnu includne, kam ji mam dat? Zatim je tu takhle globalne.
 std::pair<double, double> _rotate_point(double x, double y, double cx, double cy, double angle) {
 	angle = angle/180.0*3.1415926535;
 	double s = sin(angle);
@@ -28,15 +31,6 @@ double _distance(double ax, double ay, double bx, double by) {
 Circle::Circle(double x, double y, double r) : x(x), y(y), r(r) {}
 
 void Circle::rotate(double cx, double cy, double angle) {
-	/*angle = angle/180.0*3.1415926535;
-	double s = sin(angle);
-	double c = cos(angle);
-	x -= cx;
-	y -= cy;
-	double nx = x*c - y*s;
-	double ny = x*s + y*c;
-	x = nx + cx;
-	y = ny + cy;*/
 	auto res = _rotate_point(x,y,cx,cy,angle);
 	x = res.first;
 	y = res.second;
@@ -47,9 +41,11 @@ bool Circle::intersects(const Primitive& other, double sx, double sy) const {
 }
 
 bool Circle::_intersects(const Circle& other, double sx, double sy) const {
+	//Two circles intersect iff the distance between their centers is at most the
+	//sum of their diameters
 	double dx = x - (other.x + sx);
 	double dy = y - (other.y + sy);
-	if (sqrt(dx*dx + dy*dy) < r + other.r)
+	if (sqrt(dx*dx + dy*dy) <= r + other.r)
 		return true;
 	return false;
 }
@@ -103,34 +99,26 @@ double Line::c() const {
 }
 
 bool Line::_intersects(const Circle& other, double sx, double sy) const {
-/*	std::cout << "line: " << ax  << " " << ay << " " << bx << " " << by << std::endl;
-	std::cout << "circ: " << other.x << " " << other.y<< " " << other.r << std::endl;
-	std::cout << "line circ " << sx << " " << sy << std::endl;
-//	std::cout << other.x << " " << other.y << std::endl;
-	std::cout << "_____" << std::endl;*/
+	//Circle center in *this line coordinate system
 	double cx = other.x + sx;
 	double cy = other.y + sy;
-	//my line: ax + by + c = 0
-	//perp line through cx, cy: bx - ay + k = 0; k = a*cy - b*cx
-	//their intersection (= projection of sx, sy to my line) is 
 
+	//my line: a()* x + b() * y + c = 0
+	//perp line through cx, cy: b()*x - a()*y + k = 0; k = a*cy - b*cx
+	//their intersection (= projection of cx, cy to *this line) is 
 	double k = a() * cy - b() * cx;
 	double px = -(b()*k + a()*c())/(a()*a() + b()*b());
 	double py = (k*a()-c()*b())/(a()*a() + b()*b());
 
 	double distance = abs(a() * cx + b() * cy + c())/(sqrt(a()*a() + b()*b()));
 
+	//If projection is on the line segment, use that as the circle-line distance measuring point, otherwise use the 
+	//closer end of line segment
 	if (px >= std::min(ax, bx) && px <= std::max(ax,bx) && py >= std::min(ay,by) && py <= std::max(ay,by))
 		return distance <= other.r;
 	else{
 		return std::min(_distance(cx, cy, ax, ay), _distance(cx, cy, bx, by)) <= other.r;
 	}
-//	double distance2 = sqrt((px-cx)*(px-cx) + (py-cy)*(py-cy));
-
-	//std::cout << "DIS: " << distance << std::endl;
-	//double distance = abs((by - ay)*(other.x+sx) - (bx-ax)*(other.y+sy) + bx*ay - by*ax)/(sqrt(dx*dx+dy*dy));
-	//double edistance = std::min(_distance(other.x + sx, other.y + sy, ax, ay), _distance(other.x + sx, other.y + sy, bx, by));
-	//distance = std::max(distance, edistance);
 }
 	
 std::unique_ptr<Primitive> Line::clone() const {
@@ -138,17 +126,20 @@ std::unique_ptr<Primitive> Line::clone() const {
 }
 
 void Line::render(sf::RenderWindow& window, double px, double py) const {
-	sf::Vector2f slope(a(), b());
-	slope = 2.0f*slope / (float)sqrt(a()*a()+b()*b());
+	//SFML cannot draw bold lines - make a quad with the other two points
+	//moved in perpendicular direction
+	sf::Vector2f perp(a(), b());
+	perp = 2.0f * perp / (float)sqrt(a()*a()+b()*b());
+
 	sf::VertexArray line(sf::Quads, 4);
 	line[0].position = sf::Vector2f(ax+px,ay+py);
-	line[1].position = sf::Vector2f(ax+px,ay+py) + slope;
-	line[2].position = sf::Vector2f(bx+px,by+py) + slope;
+	line[1].position = sf::Vector2f(ax+px,ay+py) + perp;
+	line[2].position = sf::Vector2f(bx+px,by+py) + perp;
 	line[3].position = sf::Vector2f(bx+px,by+py);
 	line[0].color = sf::Color::Red;
 	line[1].color = sf::Color::Red;
 	line[2].color = sf::Color::Red;
 	line[3].color = sf::Color::Red;
+
 	window.draw(line);
-	//TODO :)
 }

@@ -57,7 +57,6 @@ class Game;
 
 
 
-
 class Body {
 private:
 public:
@@ -77,12 +76,16 @@ public:
 
 class Particle {
 	sf::Vector2f position, velocity;
+	//particle lasts lifetime ticks, alive is set to false if lifetime==0
 	int lifetime;
 	sf::Color color;
 public:
 	bool alive;
-	Particle(sf::Vector2f position, sf::Vector2f velocity, sf::Color color) : position(position), velocity(velocity), lifetime(rand()%100), alive(true),
-	color(color) {}
+
+	//lifetime is randomly set from 0 to 99
+	Particle(sf::Vector2f position, sf::Vector2f velocity, sf::Color color) : position(position), velocity(velocity), lifetime(rand()%100), color(color), alive(true) {}
+
+	//Tick moves particle in velocity direction and shortens lifetime by one
 	void tick() {
 		position += velocity;
 		lifetime = std::max(lifetime-1, 0);
@@ -93,35 +96,77 @@ public:
 };
 
 class Game {
-	unsigned int ground_num;
+	//The number of ground blocks
+	int ground_num;
+	//i-th ground block is rendered iff ground_alive[i] is true
 	std::vector<bool> ground_alive;
 	std::vector<sf::Sprite> ground;
 	std::list<Particle> particles;
 	std::list<std::unique_ptr<Bomb>> bombs;
+
+	//Width and height of the game window
 	int width, height;
 	sf::Sprite background;
+
+	//width (= active height) of one ground block
 	int groundSize() { return width / ground_num; }
+
+	//Score = number of hit shots
+	//Probably needs to be reimplemented for multiplayer support
 	int score;
 	int level;
+
+	//holdsthe previous-tick-level to detect level change
 	int oldLevel;
+
 public:
 	ResourceManager& resources;
 	std::list<std::unique_ptr<Shot>> shots;
+
+	//Game is currently single-player, but can be simply extended, therefore vector<>
 	std::vector<std::unique_ptr<Player>> players;
+
+	//Game(width, height, resources)
+	//initializes a new game with a given width and height
 	Game(int, int, ResourceManager&);
+
+	//Game is running (running() returns true) if player players[0] is alive
+	//Probably needs to be reimplemented for multiplayer support
 	bool running() const;
+
+	//One game cycle
+	//Spawns bombs, runs tick() of bombs, shots, particles, players
+	//Calculates collisions, removes dead objects
 	void tick();
+
+	//explosion(position, number) spawns number of particles exploding from position
 	void explosion(sf::Vector2f, int);
-	void gunToPlayer(std::unique_ptr<Gun>);
+
+	//Fixes the closest broken block to player players[0]
+	//Probably needs to be reimplemented for multiplayer support
 	void fixOne();
+
+	//Fixes all blocks
 	void fixAll();
-	//Player controls interface
+
+	//Player control interface (controls player players[0])
+	//Needs to be reimplemented for multiplayer support
 	void movePlayer(double);
 	void shoot();
+	//gunToPlayer(gun) gives gun to player
+	void gunToPlayer(std::unique_ptr<Gun>);
 	
+	//Renders the gamestate to the given window
+	//Used during the game is running()
+	//Bombs, shots, player, background, ground blocks, score, gun info, explosions
 	void render(sf::RenderWindow&) const;
+	
+	//Renders the ending screen to the given window
 	void renderEnding(sf::RenderWindow&);
+
+	//Game difficulty curve score->level
 	int scoreToLevel() const;
+
 	int getWidth() const { return width; }
 	int getHeight() const { return height; }
 };
@@ -130,10 +175,15 @@ class Bonus {
 public:
 	ResourceManager& resources;
 	Bonus(ResourceManager& resources) : resources(resources) {}
+
+	//apply(game) applies the bonus to game
 	virtual void apply(Game&) = 0;
+
+	//renders bonus visuals (this function is usually called by Bomb to render carried bonus over Bomb sprite)
 	virtual void render(sf::RenderWindow&, sf::Vector2f) const = 0;
 };
 
+//DummyBonus does nothing and has no effect
 class DummyBonus : public Bonus {
 public:
 	DummyBonus(ResourceManager& resources) : Bonus(resources) {}
@@ -148,13 +198,14 @@ public:
 	void apply(Game& game) override {
 		game.gunToPlayer(std::move(gun));
 	}
-	void render(sf::RenderWindow&, sf::Vector2f) const;
+	void render(sf::RenderWindow&, sf::Vector2f) const override;
 };
 
 class FixBonus : public Bonus {
+	//number of blocks to be fixed, -1 means fix all of them
 	int amount;
 public:
-	FixBonus(int amount, ResourceManager& resources) : amount(amount), Bonus(resources) {}
+	FixBonus(int amount, ResourceManager& resources) : Bonus(resources), amount(amount) {}
 	FixBonus(ResourceManager& resources) : FixBonus(1, resources) {}
 	void apply(Game&) override;
 	void render(sf::RenderWindow&, sf::Vector2f) const override;
@@ -175,6 +226,7 @@ public:
 		alive = false;
 		bonus->apply(game);
 	}
+	//Renders bomb sprite and bonus over it
 	virtual void render(sf::RenderWindow& window) override {
 		sprite.render(window);
 		bonus->render(window, sprite.position);
@@ -187,13 +239,21 @@ class Player : public Body{
 	ResourceManager& resources;
 public:
 	std::unique_ptr<Gun> gun;
+
+	//Player(position, speed, resources)
+	//speed.y should be 0, game is designed only for horizontal player movement
 	Player(sf::Vector2f, sf::Vector2f, ResourceManager&);
 	bool alive;
 	void tick();
+
+	//moveLimit(left, right, multip) moves player position by as much as multip*speed 
+	//so that the resulting position x-coordinate is still inbetween left and right
 	void moveLimit(double, double, double);
+
 	void move(float multip) {
 		sprite.move(multip*speed.x, 0);
 	}
+
 	void defaultGun();
 	void shoot(Game&);
 	void die(Game& game) {
@@ -214,34 +274,50 @@ public:
 class Projectile : public Shot {
 	sf::Vector2f speed;
 public:
+	//Projectile(position, speed, resources)
 	Projectile(sf::Vector2f, sf::Vector2f, ResourceManager&);
 	void tick() override {
 		sprite.move(speed);
 	}
+	//Projectile dies on first hit
 	void hit(Game &sp) override { alive = false; }
 };
 
 class RotatingGiant : public Shot {
+	//lifelength - the total length of life in ticks
 	int lifelength;
+	//lifetime - the remaining number of ticks
 	int lifetime;
 public:
+	//RotatingGiant(position, lifelength, resources)
 	RotatingGiant(sf::Vector2f, int, ResourceManager&);
+	
+	//decreases lifetime, rotates by 4 degrees
+	//sprite scale = (lifetime/lifelength)^3
 	void tick() override;
+
 	void move(double x, double y) {
 		sprite.move(x,y);
 	}
+
+	//is immune to hits
 	void hit(Game &sp) override {}
 };
 
 class Laser : public Shot {
+	//lifetime - the remaining number of ticks
 	int lifetime;
 public:
+	//Laser(position, angle, lifetime, resources)
 	Laser(sf::Vector2f, double, int, ResourceManager&);
+
 	void tick() override {
 		if (lifetime <= 0)
 			alive = false;
 		lifetime--;
 	}
+
+	//is immune to hits
 	void hit(Game &sp) override {}
 };
 
@@ -249,12 +325,25 @@ class Gun {
 protected:
 	ResourceManager& resources;
 public:
+	//loaded == 0 means gun is loaded
+	//loaded is decreased by one every tick
 	int loaded;
+
+	//loaded is set to interval after gunshot
 	int interval;
+
+	//ammo == -1 means infinite ammo
 	int ammo;
-	Gun(int loaded, int interval, int ammo, ResourceManager& resources) : loaded(loaded), interval(interval), ammo(ammo), resources(resources) {}
+
+	Gun(int loaded, int interval, int ammo, ResourceManager& resources) : resources(resources), loaded(loaded), interval(interval), ammo(ammo) {}
+
+	//Spawns shot(s) into game (can use Player position)
+	//Plays a sound
 	virtual void shoot(Game&, Player&) = 0;
-	virtual void tick() = 0;
+
+	virtual void tick() {
+		loaded = std::max(0, loaded-1);
+	}
 	virtual void render(sf::RenderWindow& window, sf::Vector2f position) const = 0;
 };
 
@@ -263,10 +352,7 @@ public:
 	Pistol(int loaded, int interval, int ammo, ResourceManager& resources) : Gun(loaded, interval, ammo, resources) {}
 	Pistol(int interval, ResourceManager& resources) : Pistol(0, interval, -1, resources) {}
 	void shoot(Game&, Player&) override;
-	void tick() override {
-		loaded = std::max(0, loaded - 1);
-	}
-	void render(sf::RenderWindow&, sf::Vector2f) const;
+	void render(sf::RenderWindow&, sf::Vector2f) const override;
 };	
 
 class GiantGun : public Gun {
@@ -275,20 +361,14 @@ public:
 	GiantGun(int interval, int ammo, ResourceManager& resources) : GiantGun(0, interval, ammo,resources) {}
 	GiantGun(ResourceManager& resources) : GiantGun(0, 10, 1, resources) {}
 	void shoot(Game&, Player&) override;
-	void tick() override {
-		loaded = std::max(0, loaded-1);
-	}
-	void render(sf::RenderWindow&, sf::Vector2f) const;
+	void render(sf::RenderWindow&, sf::Vector2f) const override;
 };
 
 class RailGun : public Gun {
 public:
 	RailGun(int loaded, int interval, int ammo, ResourceManager& resources) : Gun(loaded, interval, ammo, resources) {}
 	void shoot(Game&, Player&) override;
-	void tick() override {
-		loaded = std::max(0, loaded-1);
-	}
-	void render(sf::RenderWindow&, sf::Vector2f) const;
+	void render(sf::RenderWindow&, sf::Vector2f) const override;
 };
 
 #endif

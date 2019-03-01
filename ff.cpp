@@ -5,8 +5,11 @@
 
 using namespace std;
 
+
+//Fills resource manager with multimedial data
+//Outputs error if an loading error occures
 bool loadData(ResourceManager& resources) {
-#define cload(type, name, path) if (!resources.load ##type(name, path)) { cout << "Failed to load " << #type << ", path: " << path << endl; return false; }
+#define cload(type, name, path) if (!resources.load ##type(name, path)) { cerr<< "Failed to load " << #type << ", path: " << path << endl; return false; }
 	cload(HBTexture, "apple", "svg/apple.png");
 	cload(HBTexture, "lemon", "svg/lemon.png");
 	cload(HBTexture, "orange", "svg/orange.png");
@@ -25,7 +28,6 @@ bool loadData(ResourceManager& resources) {
 	cload(Sound, "background", "sounds/bceq.wav");
 	cload(Sound, "gameover", "sounds/gameover.wav");
 	cload(Font, "cmu", "cmunrm.otf");
-
 	return true;
 #undef cload
 }
@@ -40,27 +42,31 @@ int main(void) {
 	}
 
 
-
 #define ws 90
 	Game sp(16*ws, 9*ws, resources);
 	sf::RenderWindow window(sf::VideoMode(16*ws, 9*ws), "Fruit fever", sf::Style::Close);
 	window.setVerticalSyncEnabled(true);
 	sf::View view(sf::FloatRect(0,0,16*ws,9*ws));
-#undef ws
-	
 	window.setView(view);
+#undef ws
+
+	//Main game loop
 	while (window.isOpen() && sp.running()) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
 			if (event.type == sf::Event::Closed)
 				window.close();
 		}
+
+		//Player control
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 			sp.movePlayer(-1);
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 			sp.movePlayer(1);
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
 			sp.shoot();
+
+		//These are cheats - give player a desired gun, for testing porposes :-)
 		if(sf::Keyboard::isKeyPressed(sf::Keyboard::Q))
 			sp.gunToPlayer(make_unique<GiantGun>(resources));
                 if(sf::Keyboard::isKeyPressed(sf::Keyboard::W))
@@ -75,6 +81,7 @@ int main(void) {
 		sp.tick();
 	}
 
+	//Game over ending screen
 	while (window.isOpen() ) {
 		sf::Event event;
 		while (window.pollEvent(event)) {
