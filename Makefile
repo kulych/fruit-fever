@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS= -O2 -Wall -ggdb -lsfml-graphics -lsfml-window -lsfml-system
+CFLAGS= -O2 -Wall -lsfml-graphics -lsfml-window -lsfml-system
 
 ff: game.o primitives.o hitbox.o ff.o resources.o
 	$(CC) -o ff game.o hitbox.o primitives.o ff.o resources.o $(CFLAGS) -lsfml-audio

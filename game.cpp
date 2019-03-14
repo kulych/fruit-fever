@@ -407,7 +407,7 @@ void Game::tick() {
 			}
 			//If bomb collides with shot
 			if((*bomb)->collides(*(*shot))) {
-				explosion((*bomb)->sprite.getPosition(), 100);
+				explosion((*bomb)->sprite.getPosition(), 1000);
 
 				(*bomb)->hit(*this);
 				bombs.erase(bomb++);
